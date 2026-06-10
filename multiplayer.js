@@ -1,13 +1,29 @@
-// multiplayer.js - WebRTC Peer-to-Peer Manager using PeerJS
+// multiplayer.js - Firebase Realtime Database Multiplayer Manager
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA972O2AlEU64GO_seemV_N6x-c163Q-vE",
+  authDomain: "bio-defensa-multiplayer.firebaseapp.com",
+  databaseURL: "https://bio-defensa-multiplayer-default-rtdb.firebaseio.com",
+  projectId: "bio-defensa-multiplayer",
+  storageBucket: "bio-defensa-multiplayer.firebasestorage.app",
+  messagingSenderId: "363446108305",
+  appId: "1:363446108305:web:99f42b340c8bc05eac7f30",
+  measurementId: "G-M7HQSSZY9R"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const database = firebase.database();
 
 class BioDefensaMultiplayer {
     constructor(game) {
         this.game = game;
-        this.peer = null;
         this.roomId = null;
-        this.connections = []; // For Host: list of client connections. For Client: host connection.
         this.isHost = false;
-        this.playersList = []; // { peerId, nickname, avatar }
+        this.playersList = []; // { peerId, nickname, avatar, isHost }
+        this.myPeerId = 'player_' + Math.random().toString(36).substr(2, 9);
         
         // Hooks
         this.onRoomCreated = () => {};
@@ -17,242 +33,149 @@ class BioDefensaMultiplayer {
         this.onGameStateSync = () => {};
         this.onConnected = () => {};
         this.onError = () => {};
+        
+        this.roomRef = null;
     }
 
     init(nickname, avatar) {
-        // Initialize PeerJS client using public server
-        return new Promise((resolve, reject) => {
-            try {
-                this.peer = new Peer(undefined, {
-                    debug: 1,
-                    config: {
-                        'iceServers': [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                            { urls: 'stun:stun2.l.google.com:19302' }
-                        ]
-                    }
-                });
-
-                this.peer.on('open', (id) => {
-                    this.myPeerId = id;
-                    this.myNickname = nickname;
-                    this.myAvatar = avatar;
-                    resolve(id);
-                });
-
-                this.peer.on('error', (err) => {
-                    console.error("PeerJS error:", err);
-                    this.onError(err.message || "Error de conexión WebRTC.");
-                    reject(err);
-                });
-
-                this.peer.on('connection', (conn) => {
-                    if (this.isHost) {
-                        this.handleIncomingConnection(conn);
-                    } else {
-                        // Clients shouldn't receive incoming connections normally, close it
-                        conn.close();
-                    }
-                });
-            } catch (e) {
-                reject(e);
-            }
-        });
+        this.myNickname = nickname || 'Anónimo';
+        this.myAvatar = avatar || '🕵️';
+        return Promise.resolve(); // Firebase is synchronous to init
     }
 
     createRoom() {
         this.isHost = true;
-        this.roomId = this.myPeerId;
+        // Generate a 5 letter code
+        this.roomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+        
         this.playersList = [{
             peerId: this.myPeerId,
             nickname: this.myNickname,
             avatar: this.myAvatar,
             isHost: true
         }];
+        
+        this.roomRef = database.ref('rooms/' + this.roomId);
+        
+        // Set initial state
+        this.roomRef.set({
+            createdAt: firebase.database.ServerValue.TIMESTAMP,
+            players: {
+                [this.myPeerId]: this.playersList[0]
+            }
+        });
+        
+        this.roomRef.onDisconnect().remove(); // Cleanup when host leaves
+        
+        this.listenForHostEvents();
+        
         this.onRoomCreated(this.roomId);
         return this.roomId;
     }
 
     joinRoom(targetRoomId) {
         this.isHost = false;
-        this.roomId = targetRoomId;
-
-        const conn = this.peer.connect(targetRoomId, {
-            metadata: {
-                nickname: this.myNickname,
-                avatar: this.myAvatar
-            }
-        });
-
-        this.setupClientConnection(conn);
-    }
-
-    handleIncomingConnection(conn) {
-        const initConn = () => {
-            // Check if game already started or full
-            if (this.connections.length >= 11) { // 12 players max
-                conn.send({ type: 'error', message: 'La sala está llena.' });
-                setTimeout(() => conn.close(), 1000);
+        this.roomId = targetRoomId.toUpperCase();
+        
+        this.roomRef = database.ref('rooms/' + this.roomId);
+        
+        this.roomRef.child('players').once('value', snapshot => {
+            if (!snapshot.exists()) {
+                this.onError("La sala no existe o el anfitrión se ha desconectado.");
                 return;
             }
-
-            this.connections.push(conn);
-            const playerInfo = {
-                peerId: conn.peer,
-                nickname: conn.metadata ? (conn.metadata.nickname || 'Anónimo') : 'Anónimo',
-                avatar: conn.metadata ? (conn.metadata.avatar || '🕵️') : '🕵️',
+            
+            const players = snapshot.val();
+            if (Object.keys(players).length >= 12) {
+                this.onError("La sala está llena.");
+                return;
+            }
+            
+            // Add self to players
+            const myPlayerObj = {
+                peerId: this.myPeerId,
+                nickname: this.myNickname,
+                avatar: this.myAvatar,
                 isHost: false
             };
-            this.playersList.push(playerInfo);
-
-            this.onPlayerJoined(playerInfo);
-
-            // Broadcast updated players list to everyone
-            this.broadcast({
-                type: 'players_list',
-                players: this.playersList
-            });
-
-            // If a game is active, we could sync it, but usually multiplayer rooms start together.
-            this.setupHostConnection(conn);
-        };
-
-        if (conn.open) {
-            initConn();
-        } else {
-            conn.on('open', initConn);
-        }
-    }
-
-    setupHostConnection(conn) {
-        conn.on('data', (data) => {
-            if (!data) return;
-
-            switch (data.type) {
-                case 'chat':
-                    // Relay chat message to all players
-                    this.broadcast({
-                        type: 'chat',
-                        nickname: data.nickname,
-                        message: data.message
-                    });
-                    this.onChatMessage(data.nickname, data.message);
-                    break;
-
-                case 'action':
-                    // Client executes a game action (playCard or discard)
-                    this.handleClientAction(conn.peer, data);
-                    break;
-            }
-        });
-
-        conn.on('close', () => {
-            this.removePlayer(conn.peer);
-        });
-
-        conn.on('error', () => {
-            this.removePlayer(conn.peer);
-        });
-    }
-
-    setupClientConnection(conn) {
-        this.hostConnection = conn;
-
-        const initClientConn = () => {
+            
+            this.roomRef.child('players/' + this.myPeerId).set(myPlayerObj);
+            this.roomRef.child('players/' + this.myPeerId).onDisconnect().remove();
+            
+            this.listenForClientEvents();
             this.onConnected();
-        };
+        });
+    }
 
-        if (conn.open) {
-            initClientConn();
-        } else {
-            conn.on('open', initClientConn);
-        }
+    listenForHostEvents() {
+        // Listen for players joining/leaving
+        this.roomRef.child('players').on('value', snapshot => {
+            if (!snapshot.exists()) return;
+            const playersMap = snapshot.val();
+            this.playersList = Object.values(playersMap);
+            this.onPlayerJoined(null); // Just trigger UI update
+        });
+        
+        // Listen for chat
+        this.roomRef.child('chat').on('child_added', snapshot => {
+            const data = snapshot.val();
+            this.onChatMessage(data.nickname, data.message);
+        });
+        
+        // Listen for client actions
+        this.roomRef.child('actions').on('child_added', snapshot => {
+            const action = snapshot.val();
+            this.handleClientAction(action.peerId, action.data);
+            // Remove action after processing so it doesn't pile up
+            snapshot.ref.remove();
+        });
+    }
 
-        conn.on('data', (data) => {
-            if (!data) return;
-
-            switch (data.type) {
-                case 'players_list':
-                    this.playersList = data.players;
-                    this.onPlayerJoined(null); // Triggers updates on UI list
-                    break;
-
-                case 'chat':
-                    this.onChatMessage(data.nickname, data.message);
-                    break;
-
-                case 'sync':
-                    // Synchronize game engine state
-                    this.syncGameState(data.gameState);
-                    break;
-
-                case 'error':
-                    this.onError(data.message);
-                    break;
+    listenForClientEvents() {
+        // Listen for players list updates
+        this.roomRef.child('players').on('value', snapshot => {
+            if (!snapshot.exists()) {
+                // Room closed
+                this.onError("El anfitrión ha cerrado la sala.");
+                return;
+            }
+            const playersMap = snapshot.val();
+            this.playersList = Object.values(playersMap);
+            this.onPlayerJoined(null);
+        });
+        
+        // Listen for chat
+        this.roomRef.child('chat').on('child_added', snapshot => {
+            const data = snapshot.val();
+            this.onChatMessage(data.nickname, data.message);
+        });
+        
+        // Listen for game state updates
+        this.roomRef.child('gameState').on('value', snapshot => {
+            if (!snapshot.exists()) return;
+            const stateData = snapshot.val();
+            let parsedState;
+            try {
+                parsedState = JSON.parse(stateData.json);
+                this.syncGameState(parsedState);
+            } catch (e) {
+                console.error("Error parsing sync state", e);
             }
         });
-
-        conn.on('close', () => {
-            this.onError("Conexión perdida con el Host.");
-        });
-
-        conn.on('error', (err) => {
-            this.onError("Error en la conexión con el Host.");
-        });
-    }
-
-    removePlayer(peerId) {
-        const index = this.playersList.findIndex(p => p.peerId === peerId);
-        if (index !== -1) {
-            const removed = this.playersList.splice(index, 1)[0];
-            this.connections = this.connections.filter(c => c.peer !== peerId);
-            this.onPlayerLeft(removed);
-
-            this.broadcast({
-                type: 'players_list',
-                players: this.playersList
-            });
-        }
-    }
-
-    broadcast(data) {
-        if (!this.isHost) return;
-        this.connections.forEach(conn => {
-            if (conn.open) {
-                conn.send(data);
-            }
-        });
-    }
-
-    sendToHost(data) {
-        if (this.hostConnection && this.hostConnection.open) {
-            this.hostConnection.send(data);
-        }
     }
 
     sendChat(message) {
-        if (this.isHost) {
-            this.broadcast({
-                type: 'chat',
-                nickname: this.myNickname,
-                message: message
-            });
-            this.onChatMessage(this.myNickname, message);
-        } else {
-            this.sendToHost({
-                type: 'chat',
-                nickname: this.myNickname,
-                message: message
-            });
-        }
+        if (!this.roomRef) return;
+        this.roomRef.child('chat').push({
+            nickname: this.myNickname,
+            message: message,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
     }
 
-    // --- Host Authoritative Game Execution ---
     startMultiplayerGame(mode, includeEvolution, includeHalloween) {
         if (!this.isHost) return;
 
-        // Configure local game instance
         this.game.numPlayers = this.playersList.length;
         this.game.mode = mode;
         this.game.includeEvolution = includeEvolution;
@@ -261,7 +184,6 @@ class BioDefensaMultiplayer {
         const names = this.playersList.map(p => `${p.avatar} ${p.nickname}`);
         this.game.setupGame(names);
 
-        // Bind logic to sync status on every turn/state change
         this.game.onStateChange = () => {
             this.syncAndBroadcast();
         };
@@ -270,123 +192,143 @@ class BioDefensaMultiplayer {
     }
 
     syncAndBroadcast() {
-        // Prepare state to send
-        const state = this.serializeGameState();
-        this.broadcast({
-            type: 'sync',
-            gameState: state
-        });
-        this.onGameStateSync(state);
-    }
-
-    serializeGameState() {
-        // Serialize the game state to safely send over WebRTC (exclude timers/callbacks)
-        return {
-            players: this.game.players.map(p => ({
-                index: p.index,
-                name: p.name,
-                avatar: p.avatar,
-                isBot: p.isBot,
-                difficulty: p.difficulty,
-                handSize: p.hand.length, // Hide hand content for security!
-                board: p.board,
-                shieldActive: p.shieldActive,
-                quarantined: p.quarantined
-            })),
+        if (!this.isHost || !this.roomRef) return;
+        const stateObj = {
+            numPlayers: this.game.numPlayers,
             activePlayerIndex: this.game.activePlayerIndex,
-            timeLeft: this.game.timeLeft,
-            discardPileCount: this.game.discardPile.length,
-            deckCount: this.game.deck.length,
-            historyLog: this.game.historyLog,
             isGameOver: this.game.isGameOver,
-            winnerIndex: this.game.winner ? this.game.winner.index : null,
-            // Only send the active client's own hand specifically!
-            // Wait, we will broadcast a generic message, but we should make sure that each client gets their own hand!
-            // Let's attach all hands mapping, but encrypt or send client hands individually if possible.
-            // A simpler way: we broadcast the state, and we can include hands as an array where we only show the cards to the respective player.
-            // Yes! We can send the FULL state to everyone, BUT we override the hand array for security!
-            // Wait, PeerJS allows sending individual messages.
-            // Let's do that!
+            winnerIndex: this.game.winner ? this.game.winner.index : -1,
+            historyLog: this.game.historyLog.slice(-5),
+            deckCount: this.game.deck.length,
+            discardCount: this.game.discardPile.length,
+            quarantineCount: this.game.quarantinePile.length,
+            players: this.game.players.map(p => ({
+                name: p.name,
+                isBot: p.isBot,
+                botDifficulty: p.botDifficulty,
+                handCount: p.hand.length,
+                board: p.board.map(org => ({
+                    id: org.id,
+                    type: org.type,
+                    color: org.color,
+                    icon: org.icon,
+                    name: org.name,
+                    viruses: org.viruses.map(c => ({ id: c.id, color: c.color, icon: c.icon })),
+                    medicines: org.medicines.map(c => ({ id: c.id, color: c.color, icon: c.icon }))
+                }))
+            }))
         };
-    }
 
-    // Host sends specific hands individually
-    syncIndividualStates() {
-        if (!this.isHost) return;
-
-        const baseState = this.serializeGameState();
-
-        // Host local UI needs the host's actual hand (player 0)
-        // Set up client messages
-        this.connections.forEach(conn => {
-            const playerIndex = this.playersList.findIndex(p => p.peerId === conn.peer);
-            if (playerIndex !== -1) {
-                // Copy base state
-                const clientState = JSON.parse(JSON.stringify(baseState));
-                // Add the exact hand for this client
-                clientState.myHand = this.game.players[playerIndex].hand;
-                conn.send({
-                    type: 'sync',
-                    gameState: clientState
-                });
-            }
-        });
-
-        // Set host's hand locally
-        baseState.myHand = this.game.players[0].hand;
-        this.onGameStateSync(baseState);
-    }
-
-    // Override broadcast to send specific states to protect hands
-    broadcastState() {
-        if (!this.isHost) return;
-        this.syncIndividualStates();
-    }
-
-    // Host handles actions from clients
-    handleClientAction(peerId, actionData) {
-        const playerIndex = this.playersList.findIndex(p => p.peerId === peerId);
-        if (playerIndex !== this.game.activePlayerIndex) return; // Not their turn!
-
-        if (actionData.actionType === 'play') {
-            this.game.playCard(
-                playerIndex,
-                actionData.cardId,
-                actionData.targetPlayerIndex,
-                actionData.targetOrganIndex,
-                actionData.extraParams
-            );
-        } else if (actionData.actionType === 'discard') {
-            this.game.discardCards(playerIndex, actionData.cardIds);
-        }
-
-        this.broadcastState();
-    }
-
-    // Client syncing state
-    syncGameState(serverState) {
-        this.game.isGameOver = serverState.isGameOver;
-        this.game.activePlayerIndex = serverState.activePlayerIndex;
-        this.game.timeLeft = serverState.timeLeft;
-        this.game.historyLog = serverState.historyLog;
+        const stateJson = JSON.stringify(stateObj);
         
-        // Sync players
-        this.game.players = serverState.players.map((p, idx) => {
-            return {
-                ...p,
-                // If it's this client's player, use the hand sent specifically for them
-                hand: (idx === this.getMyPlayerIndex()) ? serverState.myHand : Array(p.handSize).fill({ name: "Desconocida", type: "hidden" })
-            };
+        this.roomRef.child('gameState').set({
+            json: stateJson,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
         });
+    }
 
-        if (serverState.winnerIndex !== null) {
-            this.game.winner = this.game.players[serverState.winnerIndex];
+    syncGameState(syncState) {
+        if (this.isHost) return;
+
+        this.game.numPlayers = syncState.numPlayers;
+        this.game.activePlayerIndex = syncState.activePlayerIndex;
+        this.game.isGameOver = syncState.isGameOver;
+        
+        if (syncState.winnerIndex !== -1) {
+            this.game.winner = { name: syncState.players[syncState.winnerIndex].name, index: syncState.winnerIndex };
+        } else {
+            this.game.winner = null;
         }
+        
+        this.game.historyLog = syncState.historyLog || [];
+        this.game.deck = new Array(syncState.deckCount).fill({ type: 'back' });
+        this.game.discardPile = new Array(syncState.discardCount).fill({ type: 'back' });
+        this.game.quarantinePile = new Array(syncState.quarantineCount).fill({ type: 'back' });
 
-        this.onGameStateSync(serverState);
+        this.game.players = syncState.players.map(p => ({
+            name: p.name,
+            isBot: p.isBot,
+            botDifficulty: p.botDifficulty,
+            hand: new Array(p.handCount).fill({ type: 'back' }),
+            board: p.board.map(org => {
+                const organObj = { ...org };
+                organObj.isDestroyed = () => organObj.viruses && organObj.viruses.length >= 2;
+                organObj.isImmunized = () => organObj.medicines && organObj.medicines.length >= 2;
+                organObj.isHealthy = () => !organObj.isDestroyed() && (!organObj.viruses || organObj.viruses.length === 0);
+                return organObj;
+            })
+        }));
+
+        this.onGameStateSync(syncState);
+        
+        if (this.game.isGameOver && this.game.winner && this.game.onGameOver) {
+            this.game.onGameOver(this.game.winner);
+        }
     }
 
     getMyPlayerIndex() {
-        return this.playersList.findIndex(p => p.peerId === this.myPeerId);
+        const myName = `${this.myAvatar} ${this.myNickname}`;
+        const idx = this.game.players.findIndex(p => p.name === myName);
+        return idx !== -1 ? idx : 0;
+    }
+
+    broadcastState() {
+        if (this.isHost) {
+            this.syncAndBroadcast();
+        }
+    }
+
+    sendAction(actionType, data) {
+        if (this.isHost) {
+            this.handleClientAction(this.myPeerId, { type: actionType, ...data });
+        } else {
+            if (!this.roomRef) return;
+            this.roomRef.child('actions').push({
+                peerId: this.myPeerId,
+                data: { type: actionType, ...data },
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+    }
+
+    handleClientAction(peerId, data) {
+        if (!this.isHost) return;
+
+        const playerObj = this.playersList.find(p => p.peerId === peerId);
+        if (!playerObj) return;
+
+        const pName = `${playerObj.avatar} ${playerObj.nickname}`;
+        const playerIndex = this.game.players.findIndex(p => p.name === pName);
+
+        if (playerIndex === -1) return;
+
+        if (data.type === 'play_card' || data.actionType === 'play_card') {
+            const cardObj = this.game.players[playerIndex].hand[data.cardIndex];
+            if (!cardObj) return;
+            
+            const moveData = {
+                card: cardObj,
+                playerIndex: playerIndex,
+                targetPlayerIndex: data.targetPlayerIndex,
+                targetOrganIndex: data.targetOrganIndex,
+                secondaryTargetPlayerIndex: data.secondaryTargetPlayerIndex,
+                secondaryTargetOrganIndex: data.secondaryTargetOrganIndex
+            };
+
+            const isValid = this.game.validateMove(moveData);
+            if (isValid) {
+                this.game.playCard(moveData);
+            }
+        } 
+        else if (data.type === 'discard' || data.actionType === 'discard') {
+            const indices = data.indices || [];
+            indices.sort((a,b) => b - a);
+            indices.forEach(idx => {
+                const c = this.game.players[playerIndex].hand.splice(idx, 1)[0];
+                if (c) this.game.discardPile.push(c);
+            });
+            this.game.replenishHand(this.game.players[playerIndex]);
+            this.game.endTurn();
+        }
     }
 }
