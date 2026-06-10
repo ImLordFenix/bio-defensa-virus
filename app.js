@@ -914,7 +914,7 @@ function discardSelectedCards() {
 function getSeatLayout(numPlayers) {
     if (numPlayers === 2) {
         return {
-            gridCols: "1fr 2fr 1fr",
+            gridCols: "1fr 280px 1fr",
             gridRows: "1fr auto 1.2fr",
             centerStyle: "grid-row: 2; grid-column: 2;",
             seats: [
@@ -935,7 +935,7 @@ function getSeatLayout(numPlayers) {
         };
     } else if (numPlayers === 4) {
         return {
-            gridCols: "1fr 1.2fr 1fr",
+            gridCols: "1fr 300px 1fr",
             gridRows: "1fr 1.2fr 1fr",
             centerStyle: "grid-row: 2; grid-column: 2;",
             seats: [
@@ -945,8 +945,66 @@ function getSeatLayout(numPlayers) {
                 { r: 2, c: 3, span: 1 }  // Player 3 (Right)
             ]
         };
+    } else if (numPlayers === 5) {
+        return {
+            gridCols: "1fr 1fr 1fr 1fr",
+            gridRows: "1.2fr 1fr 1.2fr",
+            centerStyle: "grid-row: 2; grid-column: 2 / span 2;",
+            seats: [
+                { r: 3, c: 2, span: 2 }, // Player 0 (Bottom Center)
+                { r: 3, c: 1, span: 1 }, // Player 1 (Bottom Left)
+                { r: 1, c: 1, span: 1 }, // Player 2 (Top Left)
+                { r: 1, c: 4, span: 1 }, // Player 3 (Top Right)
+                { r: 3, c: 4, span: 1 }  // Player 4 (Bottom Right)
+            ]
+        };
+    } else if (numPlayers === 6) {
+        return {
+            gridCols: "1fr 1fr 1fr 1fr",
+            gridRows: "1.2fr 1fr 1.2fr",
+            centerStyle: "grid-row: 2; grid-column: 2 / span 2;",
+            seats: [
+                { r: 3, c: 2, span: 2 }, // Player 0 (Bottom Center)
+                { r: 3, c: 1, span: 1 }, // Player 1 (Bottom Left)
+                { r: 1, c: 1, span: 1 }, // Player 2 (Top Left)
+                { r: 1, c: 2, span: 2 }, // Player 3 (Top Center)
+                { r: 1, c: 4, span: 1 }, // Player 4 (Top Right)
+                { r: 3, c: 4, span: 1 }  // Player 5 (Bottom Right)
+            ]
+        };
+    } else if (numPlayers === 7) {
+        return {
+            gridCols: "1fr 1fr 1fr 1fr",
+            gridRows: "1.2fr 1fr 1.2fr",
+            centerStyle: "grid-row: 2; grid-column: 2 / span 2;",
+            seats: [
+                { r: 3, c: 2, span: 2 }, // Player 0 (Bottom Center)
+                { r: 3, c: 1, span: 1 }, // Player 1 (Bottom Left)
+                { r: 2, c: 1, span: 1 }, // Player 2 (Left)
+                { r: 1, c: 1, span: 1 }, // Player 3 (Top Left)
+                { r: 1, c: 4, span: 1 }, // Player 4 (Top Right)
+                { r: 2, c: 4, span: 1 }, // Player 5 (Right)
+                { r: 3, c: 4, span: 1 }  // Player 6 (Bottom Right)
+            ]
+        };
+    } else if (numPlayers === 8) {
+        return {
+            gridCols: "1fr 1fr 1fr 1fr",
+            gridRows: "1.1fr 1fr 1fr 1.2fr",
+            centerStyle: "grid-row: 2 / span 2; grid-column: 2 / span 2;",
+            seats: [
+                { r: 4, c: 2, span: 2 }, // Player 0 (Bottom Center)
+                { r: 4, c: 1, span: 1 }, // Player 1 (Bottom Left)
+                { r: 3, c: 1, span: 1 }, // Player 2 (Middle Left)
+                { r: 1, c: 1, span: 1 }, // Player 3 (Top Left)
+                { r: 1, c: 2, span: 2 }, // Player 4 (Top Center)
+                { r: 1, c: 4, span: 1 }, // Player 5 (Top Right)
+                { r: 3, c: 4, span: 1 }, // Player 6 (Middle Right)
+                { r: 4, c: 4, span: 1 }  // Player 7 (Bottom Right)
+            ]
+        };
     } else {
-        // 5+ players (4x4 layout clockwise)
+        // 9+ players (4x4 layout clockwise fallback)
         return {
             gridCols: "repeat(4, 1fr)",
             gridRows: "repeat(4, 1fr)",
