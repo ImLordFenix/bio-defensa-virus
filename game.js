@@ -337,16 +337,36 @@ class VirusGame {
     }
 
     playCard(playerIndex, cardId, targetPlayerIndex, targetOrganIndex = null, extraParams = {}) {
-        const val = this.validateMove(playerIndex, cardId, targetPlayerIndex, targetOrganIndex, extraParams);
+        let val = this.validateMove(playerIndex, cardId, targetPlayerIndex, targetOrganIndex, extraParams);
+        
+        const player = this.players[playerIndex];
+        const cardIndex = player.hand.findIndex(c => c.id === cardId);
+        if (cardIndex === -1) return { valid: false, reason: "Carta no encontrada en mano." };
+        const card = player.hand[cardIndex];
+        const targetPlayer = this.players[targetPlayerIndex];
+
+        // --- TRAJE DE PROTECCIÓN AUTO-REACTION (From Hand) ---
+        if (val.valid && targetPlayerIndex !== playerIndex && targetPlayer) {
+            const isAttack = (card.type === 'virus') || 
+                             (card.type === 'special' && ['steal_organ', 'steal_color', 'transplant', 'alien_transplant', 'medical_error', 'trick_or_treat', 'second_opinion'].includes(card.action));
+                             
+            if (isAttack) {
+                const shieldIndex = targetPlayer.hand.findIndex(c => c.action === 'shield');
+                if (shieldIndex !== -1) {
+                    const shieldCard = targetPlayer.hand.splice(shieldIndex, 1)[0];
+                    this.discardPile.push(shieldCard);
+                    this.log(`¡${targetPlayer.name} bloqueó el ataque usando un Traje de Protección desde su mano!`, { icon: '🛡️', color: 'blue' });
+                    this.onSoundTrigger('error');
+                    this.onStateChange();
+                    return { valid: false, reason: "¡Tu ataque fue bloqueado automáticamente por un Traje de Protección! Elige otro objetivo." };
+                }
+            }
+        }
+
         if (!val.valid) {
             this.onSoundTrigger('error');
             return val;
         }
-
-        const player = this.players[playerIndex];
-        const cardIndex = player.hand.findIndex(c => c.id === cardId);
-        const card = player.hand[cardIndex];
-        const targetPlayer = this.players[targetPlayerIndex];
 
         player.hand.splice(cardIndex, 1);
 
@@ -406,7 +426,13 @@ class VirusGame {
                 this.onSoundTrigger('cure');
             } else {
                 slot.medicines.push(card);
-                this.log(`${player.name} vacunó el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
+                if (card.isExperimental && slot.medicines.length < 2) {
+                    // Experimental medicines instantly immunize by counting as 2 medicines
+                    slot.medicines.push({ ...card, id: card.id + '_clone' });
+                    this.log(`${player.name} INMUNIZÓ instantáneamente el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
+                } else {
+                    this.log(`${player.name} vacunó el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
+                }
                 this.onSoundTrigger('play_card');
             }
         } 
