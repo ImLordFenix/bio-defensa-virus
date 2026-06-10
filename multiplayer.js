@@ -227,8 +227,9 @@ class BioDefensaMultiplayer {
                     viruses: org.viruses.map(c => ({ id: c.id, color: c.color, icon: c.icon })),
                     medicines: org.medicines.map(c => ({ id: c.id, color: c.color, icon: c.icon }))
                 }))
-            }))
-        };
+            };
+        })
+    };
 
         const stateJson = JSON.stringify(stateObj);
         
