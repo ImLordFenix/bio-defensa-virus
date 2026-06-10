@@ -202,11 +202,22 @@ class BioDefensaMultiplayer {
             deckCount: this.game.deck.length,
             discardCount: this.game.discardPile.length,
             quarantineCount: this.game.quarantineZone ? this.game.quarantineZone.length : 0,
-            players: this.game.players.map(p => ({
-                name: p.name,
-                isBot: p.isBot,
-                botDifficulty: p.botDifficulty,
-                handCount: p.hand.length,
+            players: this.game.players.map((p, index) => {
+                const playerListObj = this.playersList[index];
+                const peerId = playerListObj ? playerListObj.peerId : null;
+                return {
+                    name: p.name,
+                    peerId: peerId,
+                    isBot: p.isBot,
+                    botDifficulty: p.botDifficulty,
+                    handCount: p.hand.length,
+                    hand: p.hand.map(card => ({
+                        id: card.id,
+                        type: card.type,
+                        color: card.color,
+                        icon: card.icon,
+                        name: card.name
+                    })),
                 board: p.board.map(org => ({
                     id: org.id,
                     type: org.type,
@@ -247,9 +258,10 @@ class BioDefensaMultiplayer {
 
         this.game.players = syncState.players.map(p => ({
             name: p.name,
+            peerId: p.peerId,
             isBot: p.isBot,
             botDifficulty: p.botDifficulty,
-            hand: new Array(p.handCount).fill({ type: 'back' }),
+            hand: p.hand || new Array(p.handCount).fill({ type: 'back' }),
             board: p.board.map(org => {
                 const organObj = { ...org };
                 organObj.isDestroyed = () => organObj.viruses && organObj.viruses.length >= 2;
@@ -267,9 +279,12 @@ class BioDefensaMultiplayer {
     }
 
     getMyPlayerIndex() {
+        const idx = this.game.players.findIndex(p => p.peerId === this.myPeerId);
+        if (idx !== -1) return idx;
+        
         const myName = `${this.myAvatar} ${this.myNickname}`;
-        const idx = this.game.players.findIndex(p => p.name === myName);
-        return idx !== -1 ? idx : 0;
+        const idxName = this.game.players.findIndex(p => p.name === myName);
+        return idxName !== -1 ? idxName : 0;
     }
 
     broadcastState() {
