@@ -332,6 +332,10 @@ class VirusGame {
     }
 
     playCard(playerIndex, cardId, targetPlayerIndex, targetOrganIndex = null, extraParams = {}) {
+        if (extraParams.originalTargetPlayerIndex !== undefined) {
+            targetPlayerIndex = extraParams.originalTargetPlayerIndex;
+        }
+
         const val = this.validateMove(playerIndex, cardId, targetPlayerIndex, targetOrganIndex, extraParams);
         if (!val.valid) {
             this.onSoundTrigger('error');
@@ -344,19 +348,37 @@ class VirusGame {
         const targetPlayer = this.players[targetPlayerIndex];
 
         // --- REACTION SYSTEM: Traje de Protección ---
-        if (!extraParams.skipReactionCheck && targetPlayerIndex !== playerIndex && targetPlayer) {
-            // Is it a targeted attack?
-            if (card.type === 'virus' || (card.type === 'special' && ['steal_organ', 'steal_color', 'transplant', 'medical_error', 'trick_or_treat', 'alien_transplant'].includes(card.action))) {
-                const shieldCard = targetPlayer.hand.find(c => c.type === 'special' && c.action === 'shield');
+        if (!extraParams.skipReactionCheck) {
+            let reactingPlayer = null;
+            let isAttack = false;
+
+            // 1. Is it a targeted attack?
+            if (targetPlayerIndex !== playerIndex && targetPlayer) {
+                if (card.type === 'virus' || (card.type === 'special' && ['steal_organ', 'steal_color', 'transplant', 'medical_error', 'trick_or_treat', 'alien_transplant', 'second_opinion', 'failed_experiment', 'quarantine'].includes(card.action))) {
+                    isAttack = true;
+                    reactingPlayer = targetPlayer;
+                }
+            }
+            // 2. Is it a global attack?
+            else if (card.type === 'special' && ['body_swap', 'latex_glove'].includes(card.action)) {
+                isAttack = true;
+                // Find if any other player has the shield card
+                reactingPlayer = this.players.find(p => p.index !== playerIndex && p.hand.some(c => c.type === 'special' && c.action === 'shield'));
+            }
+
+            if (isAttack && reactingPlayer) {
+                const shieldCard = reactingPlayer.hand.find(c => c.type === 'special' && c.action === 'shield');
                 if (shieldCard) {
-                    if (targetPlayer.isBot) {
+                    extraParams.reactingPlayerIndex = reactingPlayer.index;
+                    extraParams.originalTargetPlayerIndex = targetPlayerIndex;
+                    if (reactingPlayer.isBot) {
                         // Bot auto-reacts
                         extraParams.skipReactionCheck = true;
                         extraParams.reactionUsed = true;
                         extraParams.shieldCardId = shieldCard.id;
                     } else {
                         if (this.onReactionRequested) {
-                            this.onReactionRequested(playerIndex, cardId, targetPlayerIndex, targetOrganIndex, extraParams, shieldCard.id);
+                            this.onReactionRequested(playerIndex, cardId, reactingPlayer.index, targetOrganIndex, extraParams, shieldCard.id);
                         }
                         return { valid: true, pendingReaction: true };
                     }
@@ -366,21 +388,23 @@ class VirusGame {
 
         // Check if the attack was blocked by a reaction!
         if (extraParams.reactionUsed) {
-            // The target player used Traje de Protección!
+            const reactingPlayerIdx = extraParams.reactingPlayerIndex !== undefined ? extraParams.reactingPlayerIndex : targetPlayerIndex;
+            const reactingPlayer = this.players[reactingPlayerIdx];
+
             player.hand.splice(cardIndex, 1);
             this.discardPile.push(card);
             
-            const shieldIndex = targetPlayer.hand.findIndex(c => c.id === extraParams.shieldCardId);
+            const shieldIndex = reactingPlayer.hand.findIndex(c => c.id === extraParams.shieldCardId);
             if (shieldIndex !== -1) {
-                const shieldCard = targetPlayer.hand.splice(shieldIndex, 1)[0];
+                const shieldCard = reactingPlayer.hand.splice(shieldIndex, 1)[0];
                 this.discardPile.push(shieldCard);
             }
             
-            this.log(`¡${targetPlayer.name} bloqueó el ataque de ${player.name} usando su Traje de Protección!`, { icon: '🛡️', color: 'blue' });
+            this.log(`¡${reactingPlayer.name} bloqueó el ataque de ${player.name} usando su Traje de Protección!`, { icon: '🛡️', color: 'blue' });
             this.onSoundTrigger('play_card');
             
             this.refillHand(player);
-            this.refillHand(targetPlayer);
+            this.refillHand(reactingPlayer);
             
             if (this.isGameOver) {
                 this.onGameOver(this.winner);
