@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Defensa | Campo de Operaciones</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- PeerJS CDN for WebRTC P2P -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        
+        <!-- MAIN WOODEN BOARD ARENA (Left side) -->
+        <div class="arena-panel" id="tableArena">
+            
+            <!-- Dynamic Seating Layout Grid -->
+            <div class="table-grid" id="tableGrid">
+                
+                <!-- Center Table shared card piles -->
+                <div class="table-center-cell glass-panel" id="tableCenterCell">
+                    <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; font-weight:800;">Mesa Central</div>
+                    <div class="center-piles">
+                        <!-- Deck Pile -->
+                        <div class="deck-card" id="deckPile">
+                            <span style="font-size:1.2rem;">☣️</span>
+                            <span class="deck-count" id="deckCount">0</span>
+                        </div>
+                        <!-- Discard Pile -->
+                        <div class="discard-card" id="discardPile" ondragover="allowDrag(event)" ondrop="handleDiscardDrop(event)">
+                            <span style="font-size:1.2rem;">🗑️</span>
+                            <span class="deck-count" id="discardCount" style="background:rgba(239, 68, 68, 0.4)">0</span>
+                        </div>
+                        <!-- Quarantine Pile -->
+                        <div class="discard-card" id="quarantinePile" style="border-color: var(--color-halloween); color: var(--color-halloween);">
+                            <span style="font-size:1.2rem;">🚧</span>
+                            <span class="deck-count" id="quarantineCount" style="background:var(--color-halloween)">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opponents and Human seats will be rendered here dynamically by app.js -->
+            </div>
+
+            <!-- Local Room Config / Connection overlay if multiplayer host -->
+            <div id="lobbyControls" style="display:none; position:absolute; top: 120px; left: 50%; transform: translateX(-50%); z-index: 200; width: 80%; max-width:450px;" class="glass-panel">
+                <div style="padding:20px; text-align:center;">
+                    <h3 style="margin-bottom:10px;">Sala Multijugador</h3>
+                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:15px;">
+                        Comparte el código con tus amigos para que se unan directamente.
+                    </p>
+                    <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-glass); border-radius:8px; padding:10px; font-weight:800; font-size:1.2rem; color:var(--primary); margin-bottom:15px; user-select: text;" id="roomCodeDisplay">
+                        Cargando código...
+                    </div>
+                    <button class="btn btn-primary" onclick="copyInviteLink()" style="margin-bottom:10px; width:100%;">
+                        Copiar Enlace de Invitación
+                    </button>
+                    <button class="btn btn-secondary" onclick="startHostGame()" id="startHostGameBtn" style="width:100%;">
+                        Iniciar Partida (Necesita >= 2 jugadores)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- BOTTOM PANEL (Player hand solely) -->
+        <div class="hand-panel">
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <button class="btn btn-secondary" id="discardSelectedBtn" onclick="discardSelectedCards()" style="font-size:0.8rem; padding: 10px 15px;">
+                    Descartar Selección
+                </button>
+            </div>
+
+            <!-- Current player's cards hand -->
+            <div class="player-hand" id="playerHandRow">
+                <!-- Cards render here dynamically -->
+            </div>
+
+            <div style="width: 120px;"></div> <!-- Spacer -->
+        </div>
+
+        <!-- SIDEBAR (Chat, action history logs, turn info) -->
+        <div class="sidebar-panel">
+            <div class="turn-info-card glass-panel">
+                <div style="font-size:0.75rem; color: var(--text-secondary); text-transform:uppercase;">Turno De</div>
+                <div class="turn-player-name" id="activeTurnName">Cargando...</div>
+                <div class="timer-ring" id="turnTimerText">30s</div>
+            </div>
+
+            <div class="sidebar-tabs">
+                <button class="tab-btn active" id="tabLogsBtn" onclick="selectTab('logs')">HISTORIAL</button>
+                <button class="tab-btn" id="tabChatBtn" onclick="selectTab('chat')">CHAT</button>
+            </div>
+
+            <!-- Logs Content -->
+            <div class="tab-content" id="tabLogsContent">
+                <!-- Log entries will be added here -->
+            </div>
+
+            <!-- Chat Content -->
+            <div class="tab-content" id="tabChatContent" style="display:none;">
+                <!-- Chat messages will be added here -->
+            </div>
+
+            <div class="chat-input-box">
+                <input type="text" id="chatInput" placeholder="Escribe un mensaje..." onkeypress="handleChatEnter(event)">
+                <button class="btn btn-primary" onclick="sendChatMessage()" style="padding: 8px 12px; font-size:0.8rem;">
+                    Enviar
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="openGameSettings()" style="flex: 1; font-size:0.75rem; padding: 10px;">
+                    ⚙️ Ajustes
+                </button>
+                <button class="btn btn-danger" onclick="exitToLobby()" style="flex: 1; font-size:0.75rem; padding: 10px;">
+                    Abandonar
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- CHOICE MODALS FOR CARD ACTIONS (Transplant / Vampire choices) -->
+    <div id="choiceModal" class="choice-modal glass-panel" style="display:none;">
+        <h4 id="choiceModalTitle">Elige una opción</h4>
+        <div class="choice-options" id="choiceModalOptions">
+            <!-- Buttons dynamically generated -->
+        </div>
+    </div>
+
+    <!-- GAME SETTINGS MODAL -->
+    <div class="modal-overlay" id="gameSettingsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+        <div class="modal-content glass-panel" style="max-width:400px; padding:20px; border-radius:12px; position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0;">⚙️ Ajustes</h3>
+                <span style="font-size:1.5rem; cursor:pointer; color:var(--text-secondary);" onclick="closeGameSettings()">&times;</span>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:5px;">Efectos de Sonido</label>
+                <input type="range" id="gameSoundVol" min="0" max="1" step="0.1" value="0.5" onchange="saveGameConfig()" style="width:100%;">
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:5px;">Música de Fondo</label>
+                <input type="range" id="gameMusicVol" min="0" max="1" step="0.1" value="0.3" onchange="saveGameConfig()" style="width:100%;">
+            </div>
+            <button class="btn btn-primary" onclick="closeGameSettings()" style="width:100%;">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="storage.js"></script>
+    <script src="cards.js"></script>
+    <script src="game.js"></script>
+    <script src="ai.js"></script>
+    <script src="multiplayer.js"></script>
+    <script src="audio.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

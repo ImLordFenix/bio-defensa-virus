@@ -1,0 +1,977 @@
+/* styles.css - Premium Wooden Table Style Sheet for Bio-Defensa */
+
+:root {
+    --bg-dark: #0a0b10;
+    --bg-card: rgba(20, 22, 34, 0.75);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --primary: #8b5cf6;
+    --primary-glow: rgba(139, 92, 246, 0.3);
+    --accent: #d946ef;
+    
+    /* Colors for organs/diseases */
+    --color-red: #ef4444;
+    --color-red-glow: rgba(239, 68, 68, 0.4);
+    --color-blue: #3b82f6;
+    --color-blue-glow: rgba(59, 130, 246, 0.4);
+    --color-green: #10b981;
+    --color-green-glow: rgba(16, 185, 129, 0.4);
+    --color-yellow: #f59e0b;
+    --color-yellow-glow: rgba(245, 158, 11, 0.4);
+    --color-multicolor: linear-gradient(135deg, #ef4444, #3b82f6, #10b981, #f59e0b);
+    --color-bionic: #6b7280;
+    --color-bionic-glow: rgba(107, 114, 128, 0.4);
+    --color-halloween: #f97316;
+    --color-halloween-glow: rgba(249, 115, 22, 0.4);
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Glassmorphism Panel Class */
+.glass-panel {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    color: white;
+    box-shadow: 0 4px 15px var(--primary-glow);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid var(--border-glass);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+/* === LOBBY === */
+.lobby-container {
+    width: 95%;
+    max-width: 1150px;
+    height: 95vh;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    overflow-y: auto;
+}
+
+.logo-section {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #f43f5e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.3));
+    animation: pulseGlow 3s infinite ease-in-out;
+}
+
+.logo-sub {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 5px;
+}
+
+.main-menu {
+    width: 100%;
+    max-width: 580px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.profile-setup {
+    width: 100%;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.avatar-select {
+    font-size: 2.5rem;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 50%;
+    border: 2px dashed var(--primary);
+    transition: transform 0.2s;
+}
+
+.avatar-select:hover {
+    transform: rotate(15deg) scale(1.1);
+}
+
+.profile-input-group {
+    flex-grow: 1;
+}
+
+.profile-input-group label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    display: block;
+}
+
+.profile-input-group input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-glass);
+    padding: 10px 15px;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    outline: none;
+}
+
+.profile-input-group input:focus {
+    border-color: var(--primary);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 500px;
+    padding: 30px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-close {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.config-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* === GAME PAGE ARENA === */
+.game-container {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: 1fr auto;
+    background: var(--bg-dark);
+}
+
+/* Felt Card Table look (Plank wood mahogany styling) */
+.arena-panel {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    overflow: hidden;
+    position: relative;
+    background-image: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.85) 100%), 
+                      repeating-linear-gradient(90deg, #382012, #382012 80px, #2a180d 80px, #2a180d 160px);
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+}
+
+/* 4x4 Seating Grid around Center Piles */
+.table-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    width: 100%;
+    height: 100%;
+    gap: 8px;
+    padding: 8px;
+}
+
+/* Center Table shared card piles */
+.table-center-cell {
+    grid-column: 2 / span 2;
+    grid-row: 2 / span 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 11, 16, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.4);
+}
+
+.center-piles {
+    display: flex;
+    gap: 12px;
+}
+
+/* Seating mat seat layout */
+.rival-board {
+    padding: 8px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+.rival-board.active-turn {
+    border-color: var(--primary);
+    box-shadow: 0 0 12px var(--primary-glow), inset 0 0 8px rgba(139, 92, 246, 0.15);
+}
+
+/* Your mat bottom center */
+.player-board-panel {
+    grid-column: 2 / span 2;
+    grid-row: 4;
+    padding: 8px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+    width: 100%;
+    height: 100%;
+}
+
+.player-board-panel.active-turn {
+    border-color: var(--primary);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), inset 0 0 15px rgba(139, 92, 246, 0.1);
+}
+
+.rival-name {
+    font-size: 0.75rem;
+    font-weight: 800;
+    margin-bottom: 3px;
+    text-align: center;
+    color: var(--primary);
+}
+
+.rival-hand-indicator {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+/* Player/Rival Board Organ System layout */
+.organ-slots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.organ-slot {
+    width: 55px;
+    height: 80px;
+    border-radius: 6px;
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Scale down cards inside seats */
+.organ-slot .card-item {
+    width: 55px;
+    height: 80px;
+    font-size: 0.7rem;
+    padding: 3px;
+    border-radius: 6px;
+}
+
+.organ-slot .card-item .card-name {
+    font-size: 0.45rem;
+    line-height: 1;
+}
+.organ-slot .card-item .card-icon {
+    font-size: 1.0rem;
+    margin: 1px 0;
+}
+.organ-slot .card-item .card-desc {
+    display: none;
+}
+
+.organ-cards-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    width: 100%;
+}
+
+.board-organ-container {
+    width: 60px;
+    height: 85px;
+    position: relative;
+    border-radius: 8px;
+    border: 1.5px dashed rgba(255, 255, 255, 0.1);
+}
+
+.board-organ-container .card-item {
+    width: 60px;
+    height: 85px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    padding: 4px;
+}
+.board-organ-container .card-item .card-name {
+    font-size: 0.5rem;
+}
+.board-organ-container .card-item .card-icon {
+    font-size: 1.2rem;
+    margin: 2px 0;
+}
+.board-organ-container .card-item .card-desc {
+    display: none;
+}
+
+/* Dynamic grid compaction layout rules for 5+ players to avoid crowding */
+.compact-table .rival-board {
+    padding: 4px;
+}
+.compact-table .organ-slot {
+    width: 45px;
+    height: 65px;
+}
+.compact-table .organ-slot .card-item {
+    width: 45px;
+    height: 65px;
+}
+.compact-table .organ-slot .card-item .card-icon {
+    font-size: 0.8rem;
+}
+.compact-table .organ-slot .card-item .card-name {
+    font-size: 0.35rem;
+}
+
+/* Premium Card Layout */
+.card-item {
+    width: 120px;
+    height: 175px;
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: grab;
+    position: relative;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    background-color: #1a1a24;
+}
+
+.card-item.card-type-virus {
+    background-color: #0d0d0d !important;
+    border-color: #262626 !important;
+    box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.6);
+}
+
+.card-item.card-type-medicine {
+    background-color: #ffffff !important;
+    color: #0a0b10 !important;
+    border-color: #e4e4e7 !important;
+}
+
+.card-item.card-type-medicine .card-name {
+    color: #0a0b10 !important;
+}
+
+.card-item.card-type-medicine .card-desc {
+    color: #4b5563 !important;
+}
+
+.card-item.card-type-special {
+    background: linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%) !important;
+    border-color: #8b5cf6 !important;
+}
+
+/* Color thematic card borders/glows */
+.card-red { border-color: var(--color-red) !important; box-shadow: 0 0 10px var(--color-red-glow); }
+.card-blue { border-color: var(--color-blue) !important; box-shadow: 0 0 10px var(--color-blue-glow); }
+.card-green { border-color: var(--color-green) !important; box-shadow: 0 0 10px var(--color-green-glow); }
+.card-yellow { border-color: var(--color-yellow) !important; box-shadow: 0 0 10px var(--color-yellow-glow); }
+.card-multicolor { border-color: #d946ef !important; border-image: var(--color-multicolor) 1 !important; }
+.card-bionic { border-color: var(--color-bionic) !important; box-shadow: 0 0 10px var(--color-bionic-glow); background-color: #374151 !important; }
+.card-halloween { border-color: var(--color-halloween) !important; box-shadow: 0 0 10px var(--color-halloween-glow); }
+
+.card-orange {
+    background: linear-gradient(135deg, #ea580c 0%, #7c2d12 100%) !important;
+    border-color: #f97316 !important;
+}
+
+.card-item.hidden-hand-card {
+    background: linear-gradient(135deg, #1f1f2e 0%, #11111b 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card-item.hidden-hand-card::after {
+    content: "☣️";
+    font-size: 2rem;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.15;
+}
+
+.card-item:hover:not(.disabled) {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+}
+
+.card-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-name {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    word-break: break-word;
+    color: var(--text-primary);
+}
+
+.card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 5px 0;
+    flex-grow: 1;
+}
+
+.card-icon svg {
+    width: 70px;
+    height: 70px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
+    transition: transform 0.2s ease;
+}
+
+/* Micro-animations and hover effects */
+.card-item:hover .card-icon svg {
+    transform: scale(1.1);
+}
+
+/* Scaling down card SVGs inside slots, opponents hands, etc. */
+.organ-slot .card-icon svg,
+.board-organ-container .card-icon svg,
+.compact-table .card-icon svg,
+.discard-card .card-icon svg {
+    width: 38px;
+    height: 38px;
+    stroke-width: 2.2;
+}
+
+/* Card type color styling overrides for SVG */
+.card-type-virus .card-icon svg {
+    filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.4));
+}
+.card-type-medicine .card-icon svg {
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+}
+.card-type-special .card-icon svg {
+    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.6));
+}
+
+/* Thematic SVG color fills & stroke overrides */
+.card-red .card-icon svg { stroke: var(--color-red); fill: rgba(239, 68, 68, 0.12); }
+.card-blue .card-icon svg { stroke: var(--color-blue); fill: rgba(59, 130, 246, 0.12); }
+.card-green .card-icon svg { stroke: var(--color-green); fill: rgba(16, 185, 129, 0.12); }
+.card-yellow .card-icon svg { stroke: var(--color-yellow); fill: rgba(245, 158, 11, 0.12); }
+.card-bionic .card-icon svg { stroke: var(--color-bionic); fill: rgba(107, 114, 128, 0.2); }
+.card-halloween .card-icon svg,
+.card-orange .card-icon svg { stroke: var(--color-halloween); fill: rgba(249, 115, 22, 0.12); }
+.card-multicolor .card-icon svg { stroke: var(--accent); fill: rgba(217, 70, 239, 0.12); }
+
+.card-desc {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    line-height: 1.2;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+}
+
+.attachments-layer {
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    z-index: 5;
+}
+
+.organ-slot .attachments-layer {
+    bottom: -5px;
+    gap: 1px;
+}
+.organ-slot .token {
+    width: 14px;
+    height: 14px;
+}
+
+.organ-slot .token svg {
+    width: 8px;
+    height: 8px;
+}
+
+.token {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.token svg {
+    width: 14px;
+    height: 14px;
+    stroke: #ffffff;
+    fill: none;
+    stroke-width: 2.5;
+}
+
+.token-virus {
+    background: radial-gradient(circle, #701a75 0%, #4a044e 100%);
+    animation: infectedFloat 2s infinite alternate ease-in-out;
+}
+
+.token-medicine {
+    background: radial-gradient(circle, #065f46 0%, #064e3b 100%);
+    animation: healedPulse 2.5s infinite ease-in-out;
+}
+
+/* Bottom Player Hand Panel */
+.hand-panel {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px;
+    border-top: 1px solid var(--border-glass);
+    background: rgba(10, 11, 16, 0.85);
+}
+
+.deck-pile-section {
+    display: flex;
+    gap: 15px;
+}
+
+.deck-card, .discard-card {
+    width: 60px;
+    height: 85px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    position: relative;
+}
+
+.deck-card {
+    background: linear-gradient(135deg, var(--primary) 0%, #1e1b4b 100%);
+    box-shadow: 0 4px 10px var(--primary-glow);
+}
+
+.discard-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-style: dashed;
+    color: var(--text-muted);
+}
+
+/* Render small card look inside discard pile */
+.discard-card .card-item {
+    width: 56px;
+    height: 81px;
+    font-size: 0.65rem;
+    padding: 4px;
+}
+.discard-card .card-item .card-name {
+    font-size: 0.4rem;
+}
+.discard-card .card-item .card-icon {
+    font-size: 1.0rem;
+}
+.discard-card .card-item .card-desc {
+    display: none;
+}
+
+.deck-count {
+    position: absolute;
+    bottom: 5px;
+    font-size: 0.65rem;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2px 6px;
+    border-radius: 10px;
+    color: white;
+    z-index: 10;
+}
+
+.player-hand {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* Sidebar (Chat & logs) */
+.sidebar-panel {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    border-left: 1px solid var(--border-glass);
+    background: rgba(15, 17, 28, 0.8);
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    overflow: hidden;
+}
+
+.turn-info-card {
+    padding: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.turn-player-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 5px;
+}
+
+.timer-ring {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+/* Logs and Chat tab section */
+.sidebar-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.tab-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    padding: 8px;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.tab-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+}
+
+.log-entry {
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding-bottom: 6px;
+}
+
+.log-entry .time {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    margin-right: 5px;
+}
+
+.chat-entry {
+    margin-bottom: 8px;
+}
+
+.chat-entry .author {
+    font-weight: bold;
+    color: var(--primary);
+}
+
+.chat-input-box {
+    display: flex;
+    gap: 5px;
+}
+
+.chat-input-box input {
+    flex-grow: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-glass);
+    border-radius: 6px;
+    padding: 8px;
+    color: white;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.chat-input-box input:focus {
+    border-color: var(--primary);
+}
+
+/* Custom Modal Alert */
+.custom-alert-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.custom-alert-modal {
+    width: 90%;
+    max-width: 400px;
+    padding: 24px;
+    text-align: center;
+    animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Toast Notification for Achievements */
+.achievement-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 20px;
+    background: rgba(139, 92, 246, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.achievement-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.3)); }
+    50% { filter: drop-shadow(0 0 25px rgba(236, 72, 153, 0.6)); }
+}
+
+@keyframes infectedFloat {
+    0% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 4px var(--color-halloween-glow)); }
+    100% { transform: translateY(-4px) scale(1.05); filter: drop-shadow(0 0 10px var(--color-halloween)); }
+}
+
+@keyframes healedPulse {
+    0%, 100% { filter: drop-shadow(0 0 2px var(--color-green-glow)); }
+    50% { filter: drop-shadow(0 0 8px var(--color-green)); }
+}
+
+/* Dragging overlay visual helpers */
+.drag-over {
+    border-color: var(--primary) !important;
+    background: rgba(139, 92, 246, 0.1) !important;
+}
+
+.drag-over-invalid {
+    border-color: var(--color-red) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Multi-choice vamp/transplant options overlay */
+.choice-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #151824;
+    border: 1px solid var(--primary);
+    border-radius: 12px;
+    padding: 15px;
+    z-index: 1000;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+.choice-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+/* Responsive queries */
+@media (max-width: 900px) {
+    .game-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto 180px;
+    }
+    
+    .sidebar-panel {
+        grid-column: 1;
+        grid-row: 3;
+        border-left: none;
+        border-top: 1px solid var(--border-glass);
+        flex-direction: row;
+        height: 180px;
+    }
+    
+    .turn-info-card {
+        margin-bottom: 0;
+        margin-right: 15px;
+        width: 140px;
+        flex-shrink: 0;
+    }
+}

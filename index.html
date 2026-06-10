@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Defensa | El juego de cartas biológico</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Extra custom styles for the lobby elements */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .tutorial-step {
+            display: none;
+            line-height: 1.6;
+        }
+        .tutorial-step.active {
+            display: block;
+        }
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .avatar-option {
+            font-size: 2rem;
+            text-align: center;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+        }
+        .avatar-option:hover, .avatar-option.selected {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="lobby-container glass-panel">
+        <div class="logo-section">
+            <h1 class="logo-title">Bio-Defensa</h1>
+            <p class="logo-sub">Inmunidad o Destrucción</p>
+        </div>
+
+        <div class="profile-setup glass-panel">
+            <div class="avatar-select" id="avatarDisplay" onclick="openAvatarModal()">👨‍⚕️</div>
+            <div class="profile-input-group">
+                <label for="nicknameInput">Nombre del Investigador</label>
+                <input type="text" id="nicknameInput" value="Investigador" placeholder="Escribe tu apodo...">
+            </div>
+        </div>
+
+        <div class="main-menu">
+            <button class="btn btn-primary" onclick="startLocalGame()">
+                🎮 Partida Local (Con Bots)
+            </button>
+            <button class="btn btn-secondary" onclick="openMultiplayerModal()">
+                🌐 Jugar Multijugador P2P
+            </button>
+            <button class="btn btn-secondary" onclick="openCollectionModal()">
+                🃏 Colección de Cartas
+            </button>
+            <button class="btn btn-secondary" onclick="openStatsModal()">
+                📊 Historial y Estadísticas
+            </button>
+            <button class="btn btn-secondary" onclick="openSettingsModal()">
+                ⚙️ Configuración
+            </button>
+            <button class="btn btn-secondary" onclick="openTutorialModal()">
+                📖 Tutorial de Juego
+            </button>
+        </div>
+
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 15px;">
+            Inspirado en Virus! + Evolution + Halloween. Soporta 2-12 Jugadores. 100% P2P sin servidores.
+        </div>
+    </div>
+
+    <!-- MODAL: AVATAR SELECT -->
+    <div class="modal-overlay" id="avatarModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Elige tu Avatar</h3>
+                <span class="modal-close" onclick="closeModal('avatarModal')">&times;</span>
+            </div>
+            <div class="avatar-grid">
+                <span class="avatar-option selected" onclick="selectAvatar('👨‍⚕️', this)">👨‍⚕️</span>
+                <span class="avatar-option" onclick="selectAvatar('👩‍⚕️', this)">👩‍⚕️</span>
+                <span class="avatar-option" onclick="selectAvatar('👨‍🔬', this)">👨‍🔬</span>
+                <span class="avatar-option" onclick="selectAvatar('👩‍🔬', this)">👩‍🔬</span>
+                <span class="avatar-option" onclick="selectAvatar('🤖', this)">🤖</span>
+                <span class="avatar-option" onclick="selectAvatar('👽', this)">👽</span>
+                <span class="avatar-option" onclick="selectAvatar('🧟', this)">🧟</span>
+                <span class="avatar-option" onclick="selectAvatar('🧛', this)">🧛</span>
+                <span class="avatar-option" onclick="selectAvatar('🐱', this)">🐱</span>
+                <span class="avatar-option" onclick="selectAvatar('🐙', this)">🐙</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: MULTIPLAYER LOBBY -->
+    <div class="modal-overlay" id="multiplayerModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Multijugador P2P WebRTC</h3>
+                <span class="modal-close" onclick="closeModal('multiplayerModal')">&times;</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    La conexión se realiza directamente entre navegadores. Elige si quieres crear una sala o unirte a una existente.
+                </p>
+                <div style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <h4>Crear Nueva Sala</h4>
+                    <button class="btn btn-primary" onclick="createRoom()" style="width:100%; margin-top:10px;">
+                        Crear Sala (Ser Anfitrión)
+                    </button>
+                </div>
+                <div style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <h4>Unirse con Código</h4>
+                    <input type="text" id="joinCodeInput" placeholder="Introduce el código de la sala..." style="width: 100%; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-glass); padding: 10px; border-radius: 8px; color: white; margin-top: 10px; outline: none;">
+                    <button class="btn btn-secondary" onclick="joinRoom()" style="width:100%; margin-top:10px;">
+                        Unirse a la Sala
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: STATS -->
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Estadísticas del Investigador</h3>
+                <span class="modal-close" onclick="closeModal('statsModal')">&times;</span>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statsPlayed">0</div>
+                    <div class="stat-label">Partidas Jugadas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statsWon">0</div>
+                    <div class="stat-label">Partidas Ganadas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statsWinRate">0%</div>
+                    <div class="stat-label">Tasa de Victorias</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statsStreak">0</div>
+                    <div class="stat-label">Racha de Victorias</div>
+                </div>
+            </div>
+            <h4 style="margin-top:20px;">Historial de Partidas</h4>
+            <div id="matchHistoryList" style="max-height: 180px; overflow-y: auto; margin-top: 10px; font-size:0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                Cargando historial...
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIG -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Configuración</h3>
+                <span class="modal-close" onclick="closeModal('settingsModal')">&times;</span>
+            </div>
+            <div class="config-item">
+                <label>Efectos de Sonido</label>
+                <input type="range" id="soundVol" min="0" max="1" step="0.1" value="0.5" onchange="saveConfig()">
+            </div>
+            <div class="config-item">
+                <label>Música de Fondo</label>
+                <input type="range" id="musicVol" min="0" max="1" step="0.1" value="0.3" onchange="saveConfig()">
+            </div>
+            <div class="config-item">
+                <label>Modo de Juego Inicial</label>
+                <select id="gameModeSelect" style="background:rgba(0,0,0,0.3); color:white; border:1px solid var(--border-glass); padding:8px; border-radius:6px;" onchange="saveConfig()">
+                    <option value="normal">Normal (4 Órganos Sanos)</option>
+                    <option value="epic">Épico (5 Órganos Sanos)</option>
+                    <option value="supreme">Supremo (6 Órganos Sanos)</option>
+                </select>
+            </div>
+            <div class="config-item">
+                <label>Número de Bots en modo Local</label>
+                <select id="botCountSelect" style="background:rgba(0,0,0,0.3); color:white; border:1px solid var(--border-glass); padding:8px; border-radius:6px;" onchange="saveConfig()">
+                    <option value="2">2 (Tú + 1 Bot)</option>
+                    <option value="3" selected>3 (Tú + 2 Bots)</option>
+                    <option value="4">4 (Tú + 3 Bots)</option>
+                    <option value="6">6 (Tú + 5 Bots)</option>
+                    <option value="8">8 (Tú + 7 Bots)</option>
+                    <option value="12">12 (Tú + 11 Bots)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: TUTORIAL -->
+    <div class="modal-overlay" id="tutorialModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Tutorial Interactivo</h3>
+                <span class="modal-close" onclick="closeModal('tutorialModal')">&times;</span>
+            </div>
+            <div id="tutorialStepsContainer">
+                <div class="tutorial-step active" id="tstep0">
+                    <h4>🔬 El Objetivo</h4>
+                    <p>Consigue completar un cuerpo humano sano antes que tus rivales. Tu cuerpo se conforma colocando órganos sobre tu zona de juego.</p>
+                    <p>Modo Normal requiere <strong>4 órganos de colores distintos</strong> sin virus activos.</p>
+                </div>
+                <div class="tutorial-step" id="tstep1">
+                    <h4>🦠 Virus e Infecciones</h4>
+                    <p>Usa las cartas de Virus para infectar los órganos del mismo color de tus oponentes. Si un órgano ya infectado recibe un segundo virus del mismo color, ¡queda totalmente destruido!</p>
+                </div>
+                <div class="tutorial-step" id="tstep2">
+                    <h4>💊 Medicinas e Inmunidad</h4>
+                    <p>Juega medicinas del color correspondiente sobre tus propios órganos infectados para curarlos. Si juegas una segunda medicina sobre un órgano sano, quedará <strong>Inmunizado</strong> (no podrá ser infectado).</p>
+                </div>
+                <div class="tutorial-step" id="tstep3">
+                    <h4>⚡ Tratamientos Especiales</h4>
+                    <p>Usa cartas especiales para sabotear o defenderte. Puedes robar órganos (Ladrón), intercambiarlos (Trasplante), forzar descartes (Monstruo), o protegerte una ronda completa (Traje de protección).</p>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:20px;">
+                <button class="btn btn-secondary" onclick="prevTutorialStep()">Atrás</button>
+                <button class="btn btn-primary" onclick="nextTutorialStep()">Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: COLLECTION -->
+    <div class="modal-overlay" id="collectionModal">
+        <div class="modal-content glass-panel" style="max-width: 1000px; width: 95%;">
+            <div class="modal-header">
+                <h3>Colección de Cartas</h3>
+                <span class="modal-close" onclick="closeModal('collectionModal')">&times;</span>
+            </div>
+            <div class="sidebar-tabs" style="margin-bottom:15px;">
+                <button class="tab-btn active" id="collOrgBtn" onclick="selectCollectionTab('organs')">ÓRGANOS</button>
+                <button class="tab-btn" id="collVirBtn" onclick="selectCollectionTab('virus')">VIRUS</button>
+                <button class="tab-btn" id="collMedBtn" onclick="selectCollectionTab('medicines')">MEDICINAS</button>
+                <button class="tab-btn" id="collSpecBtn" onclick="selectCollectionTab('special')">TRATAMIENTOS</button>
+            </div>
+            <div id="collectionContainer" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:15px; max-height: 70vh; overflow-y:auto; padding:10px; background:rgba(0,0,0,0.2); border-radius:10px;">
+                <!-- Card items render here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="storage.js"></script>
+    <script src="cards.js"></script>
+    <script src="audio.js"></script>
+    <script>
+        let currentStep = 0;
+        const totalSteps = 4;
+
+        window.addEventListener('load', async () => {
+            // Wait for DB, then load profile
+            const profile = await dbInstance.getProfile();
+            document.getElementById('nicknameInput').value = profile.nickname;
+            document.getElementById('avatarDisplay').textContent = profile.avatar;
+            document.getElementById('soundVol').value = profile.volumeSound;
+            document.getElementById('musicVol').value = profile.volumeMusic;
+            
+            if (profile.gameMode) document.getElementById('gameModeSelect').value = profile.gameMode;
+            if (profile.botCount) document.getElementById('botCountSelect').value = profile.botCount;
+        });
+
+        async function saveConfig() {
+            const nickname = document.getElementById('nicknameInput').value || "Investigador";
+            const avatar = document.getElementById('avatarDisplay').textContent;
+            const volumeSound = parseFloat(document.getElementById('soundVol').value);
+            const volumeMusic = parseFloat(document.getElementById('musicVol').value);
+            const gameMode = document.getElementById('gameModeSelect').value;
+            const botCount = parseInt(document.getElementById('botCountSelect').value);
+
+            // Save immediately in localStorage for audio engine access
+            localStorage.setItem('bd_vol_sound', volumeSound);
+            localStorage.setItem('bd_vol_music', volumeMusic);
+
+            const profile = {
+                key: 'user',
+                nickname,
+                avatar,
+                volumeSound,
+                volumeMusic,
+                gameMode,
+                botCount
+            };
+            await dbInstance.saveProfile(profile);
+
+            // Adjust music state in real-time
+            if (volumeMusic > 0) {
+                startBackgroundMusic();
+            } else {
+                stopBackgroundMusic();
+            }
+        }
+
+        function openAvatarModal() {
+            document.getElementById('avatarModal').style.display = 'flex';
+        }
+
+        function selectAvatar(emoji, element) {
+            document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('avatarDisplay').textContent = emoji;
+            closeModal('avatarModal');
+            saveConfig();
+        }
+
+        function openStatsModal() {
+            document.getElementById('statsModal').style.display = 'flex';
+            loadStats();
+        }
+
+        async function loadStats() {
+            const stats = await dbInstance.getStats();
+            document.getElementById('statsPlayed').textContent = stats.gamesPlayed;
+            document.getElementById('statsWon').textContent = stats.gamesWon;
+            document.getElementById('statsStreak').textContent = stats.winStreak;
+
+            const winRate = stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
+            document.getElementById('statsWinRate').textContent = winRate + '%';
+
+            // Load history
+            const history = await dbInstance.getMatchHistory();
+            const list = document.getElementById('matchHistoryList');
+            if (history.length === 0) {
+                list.innerHTML = "No hay partidas registradas aún.";
+                return;
+            }
+
+            list.innerHTML = history.map(m => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                    <span>${m.date} - Modo: ${m.mode} (${m.playersCount} jug)</span>
+                    <span style="color: ${m.result === 'victoria' ? 'var(--color-green)' : 'var(--color-red)'}; font-weight:bold;">
+                        ${m.result.toUpperCase()}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function openMultiplayerModal() {
+            document.getElementById('multiplayerModal').style.display = 'flex';
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function openTutorialModal() {
+            document.getElementById('tutorialModal').style.display = 'flex';
+            currentStep = 0;
+            showTutorialStep(0);
+        }
+
+        function showTutorialStep(step) {
+            document.querySelectorAll('.tutorial-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tstep${step}`).classList.add('active');
+        }
+
+        function nextTutorialStep() {
+            if (currentStep < totalSteps - 1) {
+                currentStep++;
+                showTutorialStep(currentStep);
+            } else {
+                closeModal('tutorialModal');
+            }
+        }
+
+        function prevTutorialStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                showTutorialStep(currentStep);
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        async function startLocalGame() {
+            await saveConfig();
+            window.location.href = 'game.html?mode=local';
+        }
+
+        async function createRoom() {
+            await saveConfig();
+            window.location.href = 'game.html?mode=create';
+        }
+
+        // Custom alert helper for index lobby
+        function showCustomAlert(message, type = 'info') {
+            const oldOverlay = document.getElementById('customAlertOverlay');
+            if (oldOverlay) oldOverlay.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'customAlertOverlay';
+            overlay.className = 'custom-alert-overlay';
+            
+            let emoji = '📢';
+            if (type === 'error') emoji = '⚠️';
+
+            overlay.innerHTML = `
+                <div class="custom-alert-modal glass-panel">
+                    <div style="font-size: 2.2rem; margin-bottom: 10px;">${emoji}</div>
+                    <div style="font-weight: 800; font-size: 1.1rem; margin-bottom: 12px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--primary);">
+                        ${type === 'error' ? 'Advertencia' : 'Aviso del Sistema'}
+                    </div>
+                    <div style="font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); margin-bottom: 20px;">
+                        ${message}
+                    </div>
+                    <button class="btn btn-primary" onclick="this.closest('.custom-alert-overlay').remove()" style="padding: 8px 20px; font-size: 0.8rem; border-radius: 8px;">
+                        Aceptar
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+        }
+
+        async function joinRoom() {
+            const code = document.getElementById('joinCodeInput').value.trim();
+            if (!code) {
+                showCustomAlert("Introduce un código de sala válido.", 'error');
+                return;
+            }
+            await saveConfig();
+            window.location.href = `game.html?mode=join&code=${code}`;
+        }
+
+        function openCollectionModal() {
+            document.getElementById('collectionModal').style.display = 'flex';
+            selectCollectionTab('organs');
+        }
+
+        function selectCollectionTab(category) {
+            document.getElementById('collOrgBtn').classList.toggle('active', category === 'organs');
+            document.getElementById('collVirBtn').classList.toggle('active', category === 'virus');
+            document.getElementById('collMedBtn').classList.toggle('active', category === 'medicines');
+            document.getElementById('collSpecBtn').classList.toggle('active', category === 'special');
+
+            const container = document.getElementById('collectionContainer');
+            const templates = CARD_TEMPLATES[category];
+            
+            container.innerHTML = templates.map(card => {
+                let cardColor = card.color;
+                if (cardColor === 'orange') cardColor = 'halloween';
+                const cardClass = `card-${cardColor}`;
+                const expBadge = card.isEvolution ? '🧬 Evo' : (card.isHalloween ? '🎃 Hall' : '📦 Base');
+                
+                return `
+                    <div class="card-item ${cardClass} card-type-${card.type}" style="width:115px; height:160px; margin: 0 auto; cursor: default; transform: none; box-shadow: none;">
+                        <div class="card-header" style="justify-content:space-between; width:100%;">
+                            <span class="card-name" style="font-size:0.5rem; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; width:80px;">${card.name}</span>
+                        </div>
+                        <div class="card-icon" style="font-size:1.6rem; margin: 2px 0;">${card.icon}</div>
+                        <div class="card-desc" style="font-size:0.5rem; line-height:1.1; height: 35px; overflow:hidden;">
+                            ${card.desc}
+                        </div>
+                        <div style="font-size:0.5rem; color:var(--accent); text-align:center; font-weight:800; margin-top:2px;">
+                            Cant: ${card.qty} | ${expBadge}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
