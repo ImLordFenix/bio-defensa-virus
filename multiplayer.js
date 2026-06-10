@@ -356,6 +356,21 @@ class BioDefensaMultiplayer {
             trickOrTreatActive: !!p.trickOrTreatActive
         }));
 
+        // CRITICAL: Find my real index FIRST, then hide other players' hands
+        const myIdx = this.getMyPlayerIndex();
+        console.log('[MP] My peerId:', this.myPeerId, '| Found index:', myIdx, '| Players:', this.game.players.map(p => p.peerId));
+        
+        // Hide other players' hand cards (guest should only see their own)
+        this.game.players.forEach((p, i) => {
+            if (i !== myIdx) {
+                const handSize = p.hand.length;
+                p.hand = new Array(handSize).fill({ 
+                    id: 'hidden_' + i, type: 'hidden', color: 'none', 
+                    icon: '🂠', name: '???', desc: '' 
+                });
+            }
+        });
+
         this.onGameStateSync(syncState);
         
         if (this.game.isGameOver && this.game.winner && this.game.onGameOver) {
