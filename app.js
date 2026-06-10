@@ -191,6 +191,11 @@ window.addEventListener('load', async () => {
             names.push(`🤖 Bot ${i} (${['Fácil', 'Normal', 'Difícil'][(i - 1) % 3]})`);
         }
         game.setupGame(names);
+        game.onReactionRequested = (attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId) => {
+            if (window.showReactionModal) {
+                window.showReactionModal(attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId);
+            }
+        };
         myPlayerIndex = 0;
         updateActiveTurnUI(0);
         renderGameBoard();
@@ -414,7 +419,7 @@ function handleBoardDrop(ev) {
     } else if (card.type === 'special') {
         const act = card.action;
         // Global specials that don't need a specific target organ
-        if (['contagion', 'latex_glove', 'extra_time', 'apparition', 'shield'].includes(act)) {
+        if (['contagion', 'latex_glove', 'extra_time', 'apparition'].includes(act)) {
             executePlay(cardId, myPlayerIndex, null);
         } else if (act === 'body_swap') {
             triggerBodySwapDirection(cardId);
@@ -579,6 +584,11 @@ window.restartSameGame = function() {
     } else {
         const names = game.players.map(p => p.name);
         game.setupGame(names);
+        game.onReactionRequested = (attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId) => {
+            if (window.showReactionModal) {
+                window.showReactionModal(attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId);
+            }
+        };
         updateActiveTurnUI(game.activePlayerIndex);
         renderGameBoard();
     }
@@ -762,7 +772,23 @@ window.showReactionModal = (attackerIdx, cardId, targetIdx, targetOrganIdx, extr
 window.confirmReaction = (accept, attackerIdx, cardId, targetIdx, targetOrganIdx, extraParamsStr, shieldCardId) => {
     document.getElementById('choiceModal').style.display = 'none';
     const extraParams = JSON.parse(unescape(extraParamsStr));
-    multiplayer.sendReactionResponse(accept, { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId });
+    
+    if (multiplayer) {
+        multiplayer.sendReactionResponse(accept, { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId });
+    } else {
+        // Local mode direct execution
+        extraParams.skipReactionCheck = true;
+        if (accept) {
+            extraParams.reactionUsed = true;
+            extraParams.shieldCardId = shieldCardId;
+        }
+        const res = game.playCard(attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams);
+        if (!res.valid) {
+            showCustomAlert(res.reason, 'error');
+        } else {
+            game.onStateChange();
+        }
+    }
 };
 
 window.showWaitingForReaction = (targetName) => {

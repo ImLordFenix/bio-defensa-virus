@@ -131,11 +131,6 @@ class VirusGame {
         const targetPlayer = this.players[targetPlayerIndex];
         if (!targetPlayer) return { valid: false, reason: "Objetivo no válido." };
 
-        // Traje de Protección redirect check
-        if (targetPlayerIndex !== playerIndex && targetPlayer.shieldActive) {
-            return { valid: false, reason: "El jugador objetivo está protegido por un Traje de Protección." };
-        }
-
         // --- ORGANS ---
         if (card.type === 'organ') {
             if (targetPlayerIndex !== playerIndex) {
@@ -574,11 +569,7 @@ class VirusGame {
             player.hand = [...targetPlayer.hand];
             targetPlayer.hand = tempHand;
             this.log(`Segunda Opinión: Manos intercambiadas entre ${player.name} y ${targetPlayer.name}.`, { icon: '📋' });
-        } 
-        else if (act === "shield") {
-            player.shieldActive = true;
-            this.log(`¡${player.name} activó el Traje de Protección!`, { icon: '🦼' });
-        } 
+        }
         else if (act === "quarantine") {
             const vIdx = extraParams.virusIndex || 0;
             const slot = targetPlayer.board[targetOrganIndex];
