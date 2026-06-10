@@ -124,10 +124,7 @@ window.addEventListener('load', async () => {
     localStorage.setItem('bd_vol_sound', profile.volumeSound);
     localStorage.setItem('bd_vol_music', profile.volumeMusic);
 
-    // Trigger suspense music if volume > 0
-    if (profile.volumeMusic > 0) {
-        startBackgroundMusic();
-    }
+    // Music will start upon first user interaction via audio.js unlockAudio
 
     const config = {
         numPlayers: parseInt(profile.botCount || 3),
@@ -417,7 +414,7 @@ function handleBoardDrop(ev) {
     } else if (card.type === 'special') {
         const act = card.action;
         // Global specials that don't need a specific target organ
-        if (['contagion', 'latex_glove', 'extra_time', 'apparition'].includes(act)) {
+        if (['contagion', 'latex_glove', 'extra_time', 'apparition', 'shield'].includes(act)) {
             executePlay(cardId, myPlayerIndex, null);
         } else if (act === 'body_swap') {
             triggerBodySwapDirection(cardId);

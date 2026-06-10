@@ -272,7 +272,7 @@ class VirusGame {
                 
                 return { valid: true };
             }
-            if (act === "contagion" || act === "latex_glove" || act === "body_swap" || act === "extra_time") {
+            if (act === "contagion" || act === "latex_glove" || act === "body_swap" || act === "extra_time" || act === "shield") {
                 return { valid: true };
             }
             if (act === "medical_error" || act === "second_opinion" || act === "apparition") {
