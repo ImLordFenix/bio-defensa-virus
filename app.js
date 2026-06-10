@@ -267,6 +267,7 @@ function initMultiplayer(nickname, avatar, isHost, code = null) {
 
 function updateLobbyList() {
     const list = document.getElementById('rivalsRow');
+    if (!list) return;
     list.innerHTML = multiplayer.playersList.map(p => `
         <div class="glass-panel" style="padding: 10px 15px; border-radius: 8px; text-align: center;">
             <div style="font-size: 1.5rem;">${p.avatar}</div>

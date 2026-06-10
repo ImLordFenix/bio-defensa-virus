@@ -111,7 +111,9 @@ function playSound(type) {
 // Global user interaction listener to bypass browser autoplay blocks
 // Uses capturing phase (capture: true) so stopPropagation() from other buttons cannot block this activation.
 function unlockAudio() {
-    initAudio();
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
     initBgMusic();
     if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();

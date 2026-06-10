@@ -201,7 +201,7 @@ class BioDefensaMultiplayer {
             historyLog: this.game.historyLog.slice(-5),
             deckCount: this.game.deck.length,
             discardCount: this.game.discardPile.length,
-            quarantineCount: this.game.quarantinePile.length,
+            quarantineCount: this.game.quarantineZone ? this.game.quarantineZone.length : 0,
             players: this.game.players.map(p => ({
                 name: p.name,
                 isBot: p.isBot,
@@ -243,7 +243,7 @@ class BioDefensaMultiplayer {
         this.game.historyLog = syncState.historyLog || [];
         this.game.deck = new Array(syncState.deckCount).fill({ type: 'back' });
         this.game.discardPile = new Array(syncState.discardCount).fill({ type: 'back' });
-        this.game.quarantinePile = new Array(syncState.quarantineCount).fill({ type: 'back' });
+        this.game.quarantineZone = new Array(syncState.quarantineCount).fill({ type: 'back' });
 
         this.game.players = syncState.players.map(p => ({
             name: p.name,
