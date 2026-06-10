@@ -319,6 +319,7 @@ class VirusGame {
             if (act === "failed_experiment") {
                 if (targetOrganIndex === null) return { valid: false, reason: "Selecciona un órgano infectado o vacunado." };
                 const slot = targetPlayer.board[targetOrganIndex];
+                if (slot.medicines.length >= 2) return { valid: false, reason: "Un órgano inmunizado no puede ser afectado por un Experimento Fallido." };
                 if (slot.viruses.length === 0 && slot.medicines.length === 0) return { valid: false, reason: "El órgano debe estar infectado o vacunado." };
                 return { valid: true };
             }
@@ -450,7 +451,7 @@ class VirusGame {
             } else {
                 slot.medicines.push(card);
                 if (card.isExperimental && slot.medicines.length < 2) {
-                    slot.medicines.push(card); // Count as 2 medicines to auto-immunize
+                    slot.medicines.push({ ...card }); // Clone to avoid reference issues
                     this.log(`${player.name} inmunizó automáticamente el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
                 } else {
                     this.log(`${player.name} vacunó el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });

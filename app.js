@@ -597,6 +597,10 @@ window.restartSameGame = function() {
 // --- Interactive Selection Modals ---
 function triggerMutanteSelection(cardId) {
     const myPlayer = game.players[myPlayerIndex];
+    if (myPlayer.board.length === 0) {
+        showCustomAlert("El Órgano Mutante requiere descartar un órgano tuyo. No tienes órganos en mesa.", 'error');
+        return;
+    }
     const modal = document.getElementById('choiceModal');
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
@@ -616,6 +620,10 @@ window.confirmMutante = (cardId, replacedIndex) => {
 };
 
 function triggerTransplant(cardId, enemyPlayerIdx, enemyOrganIdx) {
+    if (enemyOrganIdx === null) {
+        showCustomAlert("Debes arrastrar la carta sobre un órgano específico del oponente, no sobre el jugador.", 'error');
+        return;
+    }
     const myPlayer = game.players[myPlayerIndex];
     if (myPlayer.board.length === 0) {
         showCustomAlert("No tienes órganos para trasplantar.", 'error');
@@ -645,6 +653,10 @@ window.confirmTransplant = (cardId, enemyPlayerIdx, enemyOrganIdx, myOrganIdx) =
 };
 
 function triggerExperimentChoice(cardId, targetPlayerIdx, targetOrganIdx) {
+    if (targetOrganIdx === null) {
+        showCustomAlert("Debes arrastrar la carta sobre un órgano específico.", 'error');
+        return;
+    }
     const modal = document.getElementById('choiceModal');
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
@@ -706,6 +718,10 @@ window.confirmQuarantine = (cardId, targetPlayerIdx, targetOrganIdx, virusIndex)
 };
 
 function triggerAlienTransplant(cardId, firstPlayerIdx, firstOrganIdx) {
+    if (firstOrganIdx === null) {
+        showCustomAlert("Debes arrastrar la carta sobre un órgano específico.", 'error');
+        return;
+    }
     const firstPlayer = game.players[firstPlayerIdx];
     const firstSlot = firstPlayer.board[firstOrganIdx];
     
