@@ -82,7 +82,7 @@ class BioDefensaMultiplayer {
     }
 
     handleIncomingConnection(conn) {
-        conn.on('open', () => {
+        const initConn = () => {
             // Check if game already started or full
             if (this.connections.length >= 11) { // 12 players max
                 conn.send({ type: 'error', message: 'La sala está llena.' });
@@ -93,8 +93,8 @@ class BioDefensaMultiplayer {
             this.connections.push(conn);
             const playerInfo = {
                 peerId: conn.peer,
-                nickname: conn.metadata.nickname || 'Anónimo',
-                avatar: conn.metadata.avatar || '🕵️',
+                nickname: conn.metadata ? (conn.metadata.nickname || 'Anónimo') : 'Anónimo',
+                avatar: conn.metadata ? (conn.metadata.avatar || '🕵️') : '🕵️',
                 isHost: false
             };
             this.playersList.push(playerInfo);
@@ -109,7 +109,13 @@ class BioDefensaMultiplayer {
 
             // If a game is active, we could sync it, but usually multiplayer rooms start together.
             this.setupHostConnection(conn);
-        });
+        };
+
+        if (conn.open) {
+            initConn();
+        } else {
+            conn.on('open', initConn);
+        }
     }
 
     setupHostConnection(conn) {
@@ -146,9 +152,15 @@ class BioDefensaMultiplayer {
     setupClientConnection(conn) {
         this.hostConnection = conn;
 
-        conn.on('open', () => {
+        const initClientConn = () => {
             this.onConnected();
-        });
+        };
+
+        if (conn.open) {
+            initClientConn();
+        } else {
+            conn.on('open', initClientConn);
+        }
 
         conn.on('data', (data) => {
             if (!data) return;
