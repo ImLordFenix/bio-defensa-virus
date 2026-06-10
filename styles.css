@@ -292,6 +292,9 @@ body {
     border: 2px solid rgba(255, 255, 255, 0.05);
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.4);
+    max-width: 280px;
+    justify-self: center;
+    width: 100%;
 }
 
 .center-piles {
@@ -357,21 +360,71 @@ body {
 }
 
 /* Player/Rival Board Organ System layout */
+/* State overlay animations and badge designs for premium organ visibility */
+.card-item.immunized {
+    border-color: #06b6d4 !important; /* Gold/Cyan glow for immunized */
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.6), inset 0 0 10px rgba(6, 182, 212, 0.4) !important;
+}
+
+.card-item.immunized::before {
+    content: "🛡️";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 1.1rem;
+    z-index: 10;
+    filter: drop-shadow(0 0 3px rgba(6, 182, 212, 0.8));
+    animation: healedPulse 2.5s infinite ease-in-out;
+}
+
+.card-item.vaccinated {
+    border-color: #10b981 !important; /* Green glow for vaccinated */
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5), inset 0 0 10px rgba(16, 185, 129, 0.3) !important;
+}
+
+.card-item.vaccinated::before {
+    content: "💊";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 1.1rem;
+    z-index: 10;
+    filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.8));
+}
+
+.card-item.infected {
+    border-color: #ef4444 !important; /* Red glow for infected */
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6), inset 0 0 10px rgba(239, 68, 68, 0.4) !important;
+}
+
+.card-item.infected::before {
+    content: "☣️";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 1.1rem;
+    z-index: 10;
+    filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.8));
+    animation: infectedFloat 2s infinite alternate ease-in-out;
+}
+
 .organ-slots {
     display: flex;
-    gap: 6px;
+    flex-wrap: wrap;
+    gap: 12px;
     justify-content: center;
     align-items: center;
     width: 100%;
+    padding: 4px;
 }
 
 .organ-slot {
-    width: 55px;
-    height: 80px;
-    border-radius: 6px;
+    width: 85px;
+    height: 125px;
+    border-radius: 10px;
     position: relative;
     background: rgba(255, 255, 255, 0.02);
-    border: 1px dashed rgba(255, 255, 255, 0.08);
+    border: 1.5px dashed rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -379,20 +432,20 @@ body {
 
 /* Scale down cards inside seats */
 .organ-slot .card-item {
-    width: 55px;
-    height: 80px;
-    font-size: 0.7rem;
-    padding: 3px;
-    border-radius: 6px;
+    width: 85px;
+    height: 125px;
+    font-size: 0.85rem;
+    padding: 6px;
+    border-radius: 10px;
 }
 
 .organ-slot .card-item .card-name {
-    font-size: 0.45rem;
-    line-height: 1;
+    font-size: 0.6rem;
+    line-height: 1.15;
 }
 .organ-slot .card-item .card-icon {
-    font-size: 1.0rem;
-    margin: 1px 0;
+    font-size: 1.6rem;
+    margin: 4px 0;
 }
 .organ-slot .card-item .card-desc {
     display: none;
@@ -400,34 +453,34 @@ body {
 
 .organ-cards-row {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     justify-content: center;
     width: 100%;
 }
 
 .board-organ-container {
-    width: 60px;
-    height: 85px;
+    width: 85px;
+    height: 125px;
     position: relative;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1.5px dashed rgba(255, 255, 255, 0.1);
 }
 
 .board-organ-container .card-item {
-    width: 60px;
-    height: 85px;
+    width: 85px;
+    height: 125px;
     position: absolute;
     top: 0;
     left: 0;
     z-index: 2;
-    padding: 4px;
+    padding: 6px;
 }
 .board-organ-container .card-item .card-name {
-    font-size: 0.5rem;
+    font-size: 0.6rem;
 }
 .board-organ-container .card-item .card-icon {
-    font-size: 1.2rem;
-    margin: 2px 0;
+    font-size: 1.6rem;
+    margin: 4px 0;
 }
 .board-organ-container .card-item .card-desc {
     display: none;
@@ -616,27 +669,27 @@ body {
 
 .attachments-layer {
     position: absolute;
-    bottom: -8px;
+    bottom: -10px;
     left: 0;
     right: 0;
     display: flex;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     z-index: 5;
 }
 
 .organ-slot .attachments-layer {
-    bottom: -5px;
-    gap: 1px;
+    bottom: -6px;
+    gap: 2px;
 }
 .organ-slot .token {
-    width: 14px;
-    height: 14px;
+    width: 20px;
+    height: 20px;
 }
 
 .organ-slot .token svg {
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
 }
 
 .token {

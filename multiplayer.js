@@ -322,7 +322,7 @@ class BioDefensaMultiplayer {
                     return {
                         name: p.name,
                         index: p.index,
-                        peerId: p.peerId || (this.playersList[index] ? this.playersList[index].peerId : null),
+                        peerId: p.peerId || null,
                         isBot: false,
                         hand: p.hand.map(c => this._serializeCard(c)),
                         board: p.board.map(slot => this._serializeSlot(slot)).filter(s => s !== null),

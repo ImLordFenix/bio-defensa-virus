@@ -687,15 +687,17 @@ class VirusGame {
         if (playerIndex !== this.activePlayerIndex) return { valid: false, reason: "No es tu turno." };
         const player = this.players[playerIndex];
 
+        let actualDiscardedCount = 0;
         cardIds.forEach(id => {
             const index = player.hand.findIndex(c => c.id === id);
             if (index !== -1) {
                 const card = player.hand.splice(index, 1)[0];
                 this.discardPile.push(card);
+                actualDiscardedCount++;
             }
         });
 
-        this.log(`${player.name} descartó ${cardIds.length} cartas.`, { icon: '🗑️' });
+        this.log(`${player.name} descartó ${actualDiscardedCount} cartas.`, { icon: '🗑️' });
         this.refillHand(player);
         this.endTurn();
         return { valid: true };

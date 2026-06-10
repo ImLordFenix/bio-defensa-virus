@@ -5,6 +5,7 @@ let multiplayer = null;
 let myPlayerIndex = 0;
 let selectedCardsForDiscard = new Set();
 let isBotMoving = false;
+let lastActivePlayerIndex = -1;
 
 // --- Custom Alert Implementation (Bypasses Browser default dialogs) ---
 function showCustomAlert(message, type = 'info') {
@@ -416,6 +417,13 @@ function handleBoardDrop(ev) {
         } else {
             executePlay(cardId, myPlayerIndex, null);
         }
+    } else if (card.type === 'medicine') {
+        const targetOrganIdx = resolveTargetOrgan(card, myPlayerIndex, null);
+        if (targetOrganIdx !== null) {
+            executePlay(cardId, myPlayerIndex, targetOrganIdx);
+        } else {
+            showCustomAlert("Selecciona un órgano objetivo para aplicar la medicina.", 'info');
+        }
     } else if (card.type === 'special') {
         const act = card.action;
         // Global specials that don't need a specific target organ
@@ -442,6 +450,24 @@ function handleOrganDragLeave(ev) {
     ev.currentTarget.classList.remove('drag-over');
 }
 
+function resolveTargetOrgan(card, targetPlayerIdx, targetOrganIdx) {
+    if (targetOrganIdx !== null) return targetOrganIdx;
+    
+    const targetPlayer = game.players[targetPlayerIdx];
+    if (!targetPlayer || targetPlayer.board.length === 0) return null;
+    
+    // If player has only 1 organ, target it automatically
+    if (targetPlayer.board.length === 1) return 0;
+    
+    // If card targets a matching color, find that matching organ
+    if (card.color && card.color !== 'multicolor' && card.color !== 'none') {
+        const matchingIdx = targetPlayer.board.findIndex(slot => slot.organ.color === card.color || slot.organ.color === 'multicolor');
+        if (matchingIdx !== -1) return matchingIdx;
+    }
+    
+    return null;
+}
+
 function handleOrganDrop(ev, targetPlayerIdx, targetOrganIdx) {
     ev.preventDefault();
     ev.stopPropagation();
@@ -451,6 +477,9 @@ function handleOrganDrop(ev, targetPlayerIdx, targetOrganIdx) {
     const activePlayer = game.players[myPlayerIndex];
     const card = activePlayer.hand.find(c => c.id === cardId);
     if (!card) return;
+
+    // Resolve target organ dynamically if dropped on player board instead of organ slot
+    targetOrganIdx = resolveTargetOrgan(card, targetPlayerIdx, targetOrganIdx);
 
     if (card.type === 'virus' && targetPlayerIdx === myPlayerIndex) {
         playSound('error');
@@ -496,6 +525,14 @@ function handleDiscardDrop(ev) {
     ev.preventDefault();
     const cardId = ev.dataTransfer.getData("text/plain");
     if (!cardId) return;
+
+    const activePlayer = game.players[myPlayerIndex];
+    const card = activePlayer ? activePlayer.hand.find(c => c.id === cardId) : null;
+    if (card && card.type === 'special' && card.action === 'apparition') {
+        // Apparition / Llorona is dropped on the discard pile to activate it!
+        executePlay(cardId, myPlayerIndex, null);
+        return;
+    }
 
     if (multiplayer && !multiplayer.isHost) {
         multiplayer.sendAction('discard', {
@@ -873,15 +910,87 @@ function discardSelectedCards() {
     }
 }
 
+// Helper function for dynamic seating layout
+function getSeatLayout(numPlayers) {
+    if (numPlayers === 2) {
+        return {
+            gridCols: "1fr 2fr 1fr",
+            gridRows: "1fr auto 1.2fr",
+            centerStyle: "grid-row: 2; grid-column: 2;",
+            seats: [
+                { r: 3, c: 1, span: 3 }, // Player 0 (Bottom)
+                { r: 1, c: 1, span: 3 }  // Player 1 (Top)
+            ]
+        };
+    } else if (numPlayers === 3) {
+        return {
+            gridCols: "1fr 1fr",
+            gridRows: "1.2fr 1fr 1.2fr",
+            centerStyle: "grid-row: 2; grid-column: 1 / span 2;",
+            seats: [
+                { r: 3, c: 1, span: 2 }, // Player 0 (Bottom)
+                { r: 1, c: 1, span: 1 }, // Player 1 (Top Left)
+                { r: 1, c: 2, span: 1 }  // Player 2 (Top Right)
+            ]
+        };
+    } else if (numPlayers === 4) {
+        return {
+            gridCols: "1fr 1.2fr 1fr",
+            gridRows: "1fr 1.2fr 1fr",
+            centerStyle: "grid-row: 2; grid-column: 2;",
+            seats: [
+                { r: 3, c: 1, span: 3 }, // Player 0 (Bottom)
+                { r: 2, c: 1, span: 1 }, // Player 1 (Left)
+                { r: 1, c: 1, span: 3 }, // Player 2 (Top)
+                { r: 2, c: 3, span: 1 }  // Player 3 (Right)
+            ]
+        };
+    } else {
+        // 5+ players (4x4 layout clockwise)
+        return {
+            gridCols: "repeat(4, 1fr)",
+            gridRows: "repeat(4, 1fr)",
+            centerStyle: "grid-row: 2 / span 2; grid-column: 2 / span 2;",
+            seats: [
+                { r: 4, c: 2, span: 2 }, // Seat 0
+                { r: 4, c: 1, span: 1 }, // Seat 1
+                { r: 3, c: 1, span: 1 }, // Seat 2
+                { r: 2, c: 1, span: 1 }, // Seat 3
+                { r: 1, c: 1, span: 1 }, // Seat 4
+                { r: 1, c: 2, span: 1 }, // Seat 5
+                { r: 1, c: 3, span: 1 }, // Seat 6
+                { r: 1, c: 4, span: 1 }, // Seat 7
+                { r: 2, c: 4, span: 1 }, // Seat 8
+                { r: 3, c: 4, span: 1 }, // Seat 9
+                { r: 4, c: 4, span: 1 }  // Seat 10
+            ]
+        };
+    }
+}
+
 // --- Rendering boards ---
 function renderGameBoard() {
     if (!game) return;
 
+    // Clear discard selection on turn changes
+    if (game.activePlayerIndex !== lastActivePlayerIndex) {
+        selectedCardsForDiscard.clear();
+        lastActivePlayerIndex = game.activePlayerIndex;
+    }
+
     const activePlayer = game.players[myPlayerIndex];
     if (!activePlayer) return;
 
-    // Add compact class if many players to avoid crowding
+    const layout = getSeatLayout(game.numPlayers);
+
+    // Apply dynamic grid sizing to the container
     const grid = document.getElementById('tableGrid');
+    if (grid) {
+        grid.style.gridTemplateColumns = layout.gridCols;
+        grid.style.gridTemplateRows = layout.gridRows;
+    }
+
+    // Add compact class if many players to avoid crowding
     if (game.numPlayers >= 6) {
         grid.classList.add('compact-table');
     } else {
@@ -890,11 +999,11 @@ function renderGameBoard() {
 
     // Cache the original center piles HTML template to prevent rendering blank cells
     const centerCellHTML = `
-        <div class="table-center-cell glass-panel" id="tableCenterCell">
+        <div class="table-center-cell glass-panel" id="tableCenterCell" style="${layout.centerStyle}">
             <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; font-weight:800;">Mesa Central</div>
             <div class="center-piles">
                 <div class="deck-card" id="deckPile">
-                    <svg viewBox="0 0 24 24" style="width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2;"><circle cx="12" cy="12" r="2"/><path d="M12 10a4 4 0 1 1-3.5 5.9M9.2 12a4 4 0 1 1 6.3 3.5M14.8 12a4 4 0 1 1-2.8-5.7"/><path d="M12 2v2M4.9 4.9l1.4 1.4M2 12h2M4.9 19.1l1.4-1.4M12 20v2M19.1 19.1l-1.4-1.4M20 12h2M19.1 4.9l-1.4 1.4"/></svg>
+                    <svg viewBox="0 0 24 24" style="width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2;"><circle cx="12" cy="12" r="2"/><path d="M12 10a4 4 0 1 1-3.5 5.9M9.2 12a4 4 0 1 1 6.3 3.5M14.8 12a4 4 0 1 1-2.8-5.7"/><path d="M12 2v2M4.9 4.9l1.4 1.4M2 12h2M4.9 19.1l1.4-1.4M12 20v2M19.1 19.1l-1.4-1.4M20 12h2M19.1 4.9l1.4 1.4"/></svg>
                     <span class="deck-count" id="deckCount">0</span>
                 </div>
                 <div class="discard-card" id="discardPile" ondragover="allowDrag(event)" ondrop="handleDiscardDrop(event)">
@@ -908,22 +1017,6 @@ function renderGameBoard() {
             </div>
         </div>
     `;
-
-    // Coordinates for seats in a 4x4 layout clockwise
-    const SEAT_POSITIONS = [
-        { r: 4, c: 2, span: 2 }, // Human seat (Seat 0)
-        { r: 4, c: 1, span: 1 }, // Left bottom
-        { r: 3, c: 1, span: 1 }, // Left middle
-        { r: 2, c: 1, span: 1 }, // Left top
-        { r: 1, c: 1, span: 1 }, // Top Left
-        { r: 1, c: 2, span: 1 }, // Top middle left
-        { r: 1, c: 3, span: 1 }, // Top middle right
-        { r: 1, c: 4, span: 1 }, // Top Right
-        { r: 2, c: 4, span: 1 }, // Right top
-        { r: 3, c: 4, span: 1 }, // Right middle
-        { r: 4, c: 4, span: 1 }  // Right bottom
-    ];
-
     let gridHTML = centerCellHTML;
 
     // Loop through all players and render their seat mats
@@ -936,7 +1029,7 @@ function renderGameBoard() {
             seatSlot = (p.index - myPlayerIndex + game.numPlayers) % game.numPlayers;
         }
 
-        const pos = SEAT_POSITIONS[seatSlot] || { r: 1, c: 1, span: 1 };
+        const pos = layout.seats[seatSlot] || { r: 1, c: 1, span: 1 };
         const gridStyle = `grid-row: ${pos.r}; grid-column: ${pos.c} / span ${pos.span};`;
 
         const isTurn = game.activePlayerIndex === p.index;
@@ -969,13 +1062,20 @@ function renderGameBoard() {
                     });
 
                     const isImmunized = slot.medicines.length >= 2;
+                    const isVaccinated = slot.medicines.length === 1 && slot.viruses.length === 0;
+                    const isInfected = slot.viruses.length > 0;
+
+                    let stateClass = '';
+                    if (isImmunized) stateClass = 'immunized';
+                    else if (isVaccinated) stateClass = 'vaccinated';
+                    else if (isInfected) stateClass = 'infected';
 
                     return `
                         <div class="board-organ-container" 
                              ondragover="handleOrganDragOver(event, ${p.index}, ${idx})" 
                              ondragleave="handleOrganDragLeave(event)" 
                              ondrop="handleOrganDrop(event, ${p.index}, ${idx})">
-                            <div class="card-item ${cardClass} card-type-${card.type} ${isImmunized ? 'immunized' : ''}">
+                            <div class="card-item ${cardClass} card-type-${card.type} ${stateClass}">
                                 <div class="card-header"><span class="card-name">${card.name}</span></div>
                                 <div class="card-icon">${card.icon}</div>
                                 <div class="attachments-layer">${tokensHtml}</div>
@@ -1006,12 +1106,21 @@ function renderGameBoard() {
                     tokensHtml += `<div class="token token-medicine"><svg viewBox="0 0 24 24"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg></div>`;
                 });
 
+                const isImmunized = slot.medicines.length >= 2;
+                const isVaccinated = slot.medicines.length === 1 && slot.viruses.length === 0;
+                const isInfected = slot.viruses.length > 0;
+
+                let stateClass = '';
+                if (isImmunized) stateClass = 'immunized';
+                else if (isVaccinated) stateClass = 'vaccinated';
+                else if (isInfected) stateClass = 'infected';
+
                 return `
                     <div class="organ-slot" 
                          ondragover="handleOrganDragOver(event, ${p.index}, ${idx})" 
                          ondragleave="handleOrganDragLeave(event)" 
                          ondrop="handleOrganDrop(event, ${p.index}, ${idx})">
-                        <div class="card-item ${cardClass} card-type-${card.type}">
+                        <div class="card-item ${cardClass} card-type-${card.type} ${stateClass}">
                             <div class="card-header"><span class="card-name">${card.name}</span></div>
                             <div class="card-icon">${card.icon}</div>
                             <div class="attachments-layer">${tokensHtml}</div>
