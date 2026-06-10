@@ -301,13 +301,17 @@ function initMultiplayer(nickname, avatar, isHost, code = null) {
 function updateLobbyList() {
     const list = document.getElementById('rivalsRow');
     if (!list) return;
-    list.innerHTML = multiplayer.playersList.map(p => `
-        <div class="glass-panel" style="padding: 10px 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 1.5rem;">${p.avatar}</div>
-            <div style="font-size: 0.8rem; font-weight: 600;">${p.nickname}</div>
-            <div style="font-size: 0.65rem; color: var(--text-muted);">${p.isHost ? 'Anfitrión' : 'Jugador'}</div>
-        </div>
-    `).join('');
+    list.innerHTML = multiplayer.playersList.map(p => {
+        const kickBtn = (multiplayer.isHost && !p.isHost) ? `<button class="btn btn-danger" onclick="kickPlayer('${p.peerId}')" style="padding: 4px 8px; font-size: 0.65rem; margin-top: 6px; border-radius: 6px; text-transform: none; font-weight: bold; min-width: auto;">Expulsar</button>` : '';
+        return `
+            <div class="glass-panel" style="padding: 10px 15px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div style="font-size: 1.5rem;">${p.avatar}</div>
+                <div style="font-size: 0.8rem; font-weight: 600;">${p.nickname}</div>
+                <div style="font-size: 0.65rem; color: var(--text-muted);">${p.isHost ? 'Anfitrión' : 'Jugador'}</div>
+                ${kickBtn}
+            </div>
+        `;
+    }).join('');
 }
 
 function startHostGame() {
@@ -1318,6 +1322,26 @@ function exitToLobby() {
 window.openGameSettings = function() {
     document.getElementById('gameSoundVol').value = localStorage.getItem('bd_vol_sound') || 0.5;
     document.getElementById('gameMusicVol').value = localStorage.getItem('bd_vol_music') || 0.3;
+
+    // Handle player management for host in multiplayer
+    const kickSection = document.getElementById('kickPlayersSection');
+    const kickList = document.getElementById('kickPlayersList');
+    if (kickSection && kickList) {
+        if (multiplayer && multiplayer.isHost && multiplayer.playersList.length > 1) {
+            kickSection.style.display = 'block';
+            kickList.innerHTML = multiplayer.playersList
+                .filter(p => p.peerId !== multiplayer.myPeerId)
+                .map(p => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 8px; margin-bottom: 4px;">
+                        <span style="font-size: 0.8rem; font-weight: 600;">${p.avatar} ${p.nickname}</span>
+                        <button class="btn btn-danger" onclick="kickPlayer('${p.peerId}')" style="padding: 4px 8px; font-size: 0.65rem; border-radius: 6px; text-transform: none; font-weight: bold; min-width: auto;">Expulsar</button>
+                    </div>
+                `).join('');
+        } else {
+            kickSection.style.display = 'none';
+        }
+    }
+
     document.getElementById('gameSettingsModal').style.display = 'flex';
 };
 
@@ -1349,4 +1373,19 @@ window.saveGameConfig = async function() {
     } else if (musicVol == 0) {
         stopBackgroundMusic();
     }
+};
+
+window.kickPlayer = function(peerId) {
+    if (!multiplayer || !multiplayer.isHost) return;
+    
+    const player = multiplayer.playersList.find(p => p.peerId === peerId);
+    const name = player ? player.nickname : "este jugador";
+    
+    showCustomConfirm(`¿Seguro que deseas expulsar a ${name} de la partida?`, () => {
+        multiplayer.kickPlayer(peerId);
+        // Refresh the settings modal list if it is open
+        if (document.getElementById('gameSettingsModal').style.display === 'flex') {
+            window.openGameSettings();
+        }
+    });
 };

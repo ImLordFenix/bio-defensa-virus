@@ -407,6 +407,7 @@ class VirusGame {
             this.refillHand(reactingPlayer);
             
             if (this.isGameOver) {
+                this.onStateChange();
                 this.onGameOver(this.winner);
             } else {
                 this.endTurn();
@@ -496,6 +497,7 @@ class VirusGame {
             player.extraPlays = (player.extraPlays || 0) + player.hand.length;
             // Don't refill hand yet — player must play remaining cards first
             if (this.isGameOver) {
+                this.onStateChange();
                 this.onGameOver(this.winner);
             } else {
                 this.startTimer();
@@ -509,6 +511,7 @@ class VirusGame {
                 delete player.extraPlays;
                 this.refillHand(player);
                 if (this.isGameOver) {
+                    this.onStateChange();
                     this.onGameOver(this.winner);
                 } else {
                     this.endTurn();
@@ -516,6 +519,7 @@ class VirusGame {
             } else {
                 // Still has extra plays remaining
                 if (this.isGameOver) {
+                    this.onStateChange();
                     this.onGameOver(this.winner);
                 } else {
                     this.startTimer();
@@ -525,6 +529,7 @@ class VirusGame {
         } else {
             this.refillHand(player);
             if (this.isGameOver) {
+                this.onStateChange();
                 this.onGameOver(this.winner);
             } else {
                 this.endTurn();
@@ -755,19 +760,9 @@ class VirusGame {
             if (player.trickOrTreatActive) continue;
 
             const healthySlots = player.board.filter(slot => this.isOrganHealthy(slot));
-            const colors = new Set();
-            let hasMulticolor = false;
 
-            healthySlots.forEach(slot => {
-                const color = slot.organ.color;
-                if (color === 'multicolor') hasMulticolor = true;
-                else colors.add(color);
-            });
-
-            let uniqueCount = colors.size;
-            if (hasMulticolor) uniqueCount++;
-
-            if (uniqueCount >= targetColorsCount) {
+            // Simplifying victory to check if they have gathered the target number of healthy organs
+            if (healthySlots.length >= targetColorsCount) {
                 this.isGameOver = true;
                 this.winner = player;
                 break;

@@ -181,6 +181,14 @@ class BioDefensaMultiplayer {
             }
         });
 
+        // Guest listens for kick notifications
+        this.roomRef.child('kicked_players/' + this.myPeerId).on('value', snapshot => {
+            if (snapshot.exists() && snapshot.val() === true) {
+                this.roomRef.child('kicked_players/' + this.myPeerId).off();
+                this.onError("Has sido expulsado de la partida por el anfitrión.");
+            }
+        });
+
         this.setupReactionsListener();
     }
 
@@ -519,5 +527,15 @@ class BioDefensaMultiplayer {
                 this.game.discardCards(playerIndex, cardIds);
             }
         }
+    }
+
+    kickPlayer(peerId) {
+        if (!this.isHost || !this.roomRef) return;
+        
+        // Remove from players list
+        this.roomRef.child('players/' + peerId).remove();
+        
+        // Set a kicked flag under kicked_players so they get notified
+        this.roomRef.child('kicked_players/' + peerId).set(true);
     }
 }
