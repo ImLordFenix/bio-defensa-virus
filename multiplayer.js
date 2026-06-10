@@ -239,13 +239,9 @@ class BioDefensaMultiplayer {
                 historyLog: this.game.historyLog.slice(-5),
                 deckCount: this.game.deck.length,
                 discardCount: this.game.discardPile.length,
-                lastDiscardCard: this.game.discardPile.length > 0 
-                    ? this._serializeCard(this.game.discardPile[this.game.discardPile.length - 1]) 
-                    : null,
+                discardTopCard: this.game.discardPile.length > 0 ? this._serializeCard(this.game.discardPile[this.game.discardPile.length - 1]) : null,
                 quarantineCount: this.game.quarantineZone ? this.game.quarantineZone.length : 0,
-                lastQuarantineCard: (this.game.quarantineZone && this.game.quarantineZone.length > 0) 
-                    ? this._serializeCard(this.game.quarantineZone[this.game.quarantineZone.length - 1]) 
-                    : null,
+                quarantineTopCard: (this.game.quarantineZone && this.game.quarantineZone.length > 0) ? this._serializeCard(this.game.quarantineZone[this.game.quarantineZone.length - 1]) : null,
                 players: this.game.players.map((p, index) => {
                     return {
                         name: p.name,
@@ -294,23 +290,14 @@ class BioDefensaMultiplayer {
         
         this.game.historyLog = syncState.historyLog || [];
         this.game.deck = new Array(syncState.deckCount || 0).fill({ type: 'back' });
-        
-        // Rebuild discard pile with the real last card so rendering shows the correct card
-        const discardCount = syncState.discardCount || 0;
-        if (discardCount > 0 && syncState.lastDiscardCard) {
-            const fillers = new Array(Math.max(0, discardCount - 1)).fill({ type: 'back' });
-            this.game.discardPile = [...fillers, syncState.lastDiscardCard];
-        } else {
-            this.game.discardPile = [];
+        this.game.discardPile = new Array(syncState.discardCount || 0).fill({ type: 'back' });
+        if (syncState.discardCount > 0 && syncState.discardTopCard) {
+            this.game.discardPile[this.game.discardPile.length - 1] = syncState.discardTopCard;
         }
-        
-        // Rebuild quarantine zone with the real last card
-        const quarantineCount = syncState.quarantineCount || 0;
-        if (quarantineCount > 0 && syncState.lastQuarantineCard) {
-            const fillers = new Array(Math.max(0, quarantineCount - 1)).fill({ type: 'back' });
-            this.game.quarantineZone = [...fillers, syncState.lastQuarantineCard];
-        } else {
-            this.game.quarantineZone = [];
+
+        this.game.quarantineZone = new Array(syncState.quarantineCount || 0).fill({ type: 'back' });
+        if (syncState.quarantineCount > 0 && syncState.quarantineTopCard) {
+            this.game.quarantineZone[this.game.quarantineZone.length - 1] = syncState.quarantineTopCard;
         }
 
         this.game.players = syncState.players.map(p => ({
@@ -356,21 +343,6 @@ class BioDefensaMultiplayer {
             trickOrTreatActive: !!p.trickOrTreatActive
         }));
 
-        // CRITICAL: Find my real index FIRST, then hide other players' hands
-        const myIdx = this.getMyPlayerIndex();
-        console.log('[MP] My peerId:', this.myPeerId, '| Found index:', myIdx, '| Players:', this.game.players.map(p => p.peerId));
-        
-        // Hide other players' hand cards (guest should only see their own)
-        this.game.players.forEach((p, i) => {
-            if (i !== myIdx) {
-                const handSize = p.hand.length;
-                p.hand = new Array(handSize).fill({ 
-                    id: 'hidden_' + i, type: 'hidden', color: 'none', 
-                    icon: '🂠', name: '???', desc: '' 
-                });
-            }
-        });
-
         this.onGameStateSync(syncState);
         
         if (this.game.isGameOver && this.game.winner && this.game.onGameOver) {
@@ -382,14 +354,21 @@ class BioDefensaMultiplayer {
     // Get my player index based on peerId
     // =========================================================================
     getMyPlayerIndex() {
-        // First try matching by peerId
+        // The host is always player 0
+        if (this.isHost) return 0;
+
+        // Try matching by precise unique peerId first
         const idx = this.game.players.findIndex(p => p.peerId === this.myPeerId);
         if (idx !== -1) return idx;
         
-        // Fallback: match by name
+        // Fallback: match by name, but ensure we don't accidentally match the host (index 0)
+        // if both players left their name as default "Anónimo"
         const myName = `${this.myAvatar} ${this.myNickname}`;
-        const idxName = this.game.players.findIndex(p => p.name === myName);
-        return idxName !== -1 ? idxName : 0;
+        const idxName = this.game.players.findIndex(p => p.name === myName && p.index !== 0);
+        if (idxName !== -1) return idxName;
+        
+        // Absolute fallback for guests: you must be player 1 (or the first non-host slot)
+        return 1;
     }
 
     broadcastState() {
