@@ -22,7 +22,7 @@ class BioDefensaMultiplayer {
         this.game = game;
         this.roomId = null;
         this.isHost = false;
-        this.playersList = []; // { peerId, nickname, avatar, isHost }
+        this.playersList = [];
         this.myPeerId = 'player_' + Math.random().toString(36).substr(2, 9);
         
         // Hooks
@@ -40,12 +40,11 @@ class BioDefensaMultiplayer {
     init(nickname, avatar) {
         this.myNickname = nickname || 'Anónimo';
         this.myAvatar = avatar || '🕵️';
-        return Promise.resolve(); // Firebase is synchronous to init
+        return Promise.resolve();
     }
 
     createRoom() {
         this.isHost = true;
-        // Generate a 5 letter code
         this.roomId = Math.random().toString(36).substring(2, 7).toUpperCase();
         
         this.playersList = [{
@@ -57,7 +56,6 @@ class BioDefensaMultiplayer {
         
         this.roomRef = database.ref('rooms/' + this.roomId);
         
-        // Set initial state
         this.roomRef.set({
             createdAt: firebase.database.ServerValue.TIMESTAMP,
             players: {
@@ -65,10 +63,8 @@ class BioDefensaMultiplayer {
             }
         });
         
-        this.roomRef.onDisconnect().remove(); // Cleanup when host leaves
-        
+        this.roomRef.onDisconnect().remove();
         this.listenForHostEvents();
-        
         this.onRoomCreated(this.roomId);
         return this.roomId;
     }
@@ -91,7 +87,6 @@ class BioDefensaMultiplayer {
                 return;
             }
             
-            // Add self to players
             const myPlayerObj = {
                 peerId: this.myPeerId,
                 nickname: this.myNickname,
@@ -108,34 +103,30 @@ class BioDefensaMultiplayer {
     }
 
     listenForHostEvents() {
-        // Listen for players joining/leaving
         this.roomRef.child('players').on('value', snapshot => {
             if (!snapshot.exists()) return;
             const playersMap = snapshot.val();
             this.playersList = Object.values(playersMap);
-            this.onPlayerJoined(null); // Just trigger UI update
+            this.onPlayerJoined(null);
         });
         
-        // Listen for chat
         this.roomRef.child('chat').on('child_added', snapshot => {
             const data = snapshot.val();
-            this.onChatMessage(data.nickname, data.message);
+            if (data) this.onChatMessage(data.nickname, data.message);
         });
         
-        // Listen for client actions
         this.roomRef.child('actions').on('child_added', snapshot => {
             const action = snapshot.val();
-            this.handleClientAction(action.peerId, action.data);
-            // Remove action after processing so it doesn't pile up
+            if (action) {
+                this.handleClientAction(action.peerId, action.data);
+            }
             snapshot.ref.remove();
         });
     }
 
     listenForClientEvents() {
-        // Listen for players list updates
         this.roomRef.child('players').on('value', snapshot => {
             if (!snapshot.exists()) {
-                // Room closed
                 this.onError("El anfitrión ha cerrado la sala.");
                 return;
             }
@@ -144,19 +135,16 @@ class BioDefensaMultiplayer {
             this.onPlayerJoined(null);
         });
         
-        // Listen for chat
         this.roomRef.child('chat').on('child_added', snapshot => {
             const data = snapshot.val();
-            this.onChatMessage(data.nickname, data.message);
+            if (data) this.onChatMessage(data.nickname, data.message);
         });
         
-        // Listen for game state updates
         this.roomRef.child('gameState').on('value', snapshot => {
             if (!snapshot.exists()) return;
             const stateData = snapshot.val();
-            let parsedState;
             try {
-                parsedState = JSON.parse(stateData.json);
+                const parsedState = JSON.parse(stateData.json);
                 this.syncGameState(parsedState);
             } catch (e) {
                 console.error("Error parsing sync state", e);
@@ -173,6 +161,9 @@ class BioDefensaMultiplayer {
         });
     }
 
+    // =========================================================================
+    // HOST: Start a multiplayer game
+    // =========================================================================
     startMultiplayerGame(mode, includeEvolution, includeHalloween) {
         if (!this.isHost) return;
 
@@ -184,8 +175,11 @@ class BioDefensaMultiplayer {
         const names = this.playersList.map(p => `${p.avatar} ${p.nickname}`);
         this.game.setupGame(names);
         
-        // In multiplayer, all connected peers are humans, not bots
-        this.game.players.forEach(p => p.isBot = false);
+        // CRITICAL: Mark all players as human so game.js doesn't auto-play for them
+        this.game.players.forEach((p, i) => {
+            p.isBot = false;
+            p.peerId = this.playersList[i] ? this.playersList[i].peerId : null;
+        });
 
         this.game.onStateChange = () => {
             this.syncAndBroadcast();
@@ -194,56 +188,74 @@ class BioDefensaMultiplayer {
         this.syncAndBroadcast();
     }
 
-    syncAndBroadcast() {
-        if (!this.isHost || !this.roomRef) return;
-        const stateObj = {
-            numPlayers: this.game.numPlayers,
-            activePlayerIndex: this.game.activePlayerIndex,
-            isGameOver: this.game.isGameOver,
-            winnerIndex: this.game.winner ? this.game.winner.index : -1,
-            historyLog: this.game.historyLog.slice(-5),
-            deckCount: this.game.deck.length,
-            discardCount: this.game.discardPile.length,
-            quarantineCount: this.game.quarantineZone ? this.game.quarantineZone.length : 0,
-            players: this.game.players.map((p, index) => {
-                const playerListObj = this.playersList[index];
-                const peerId = playerListObj ? playerListObj.peerId : null;
-                return {
-                    name: p.name,
-                    peerId: peerId,
-                    isBot: p.isBot,
-                    botDifficulty: p.botDifficulty,
-                    handCount: p.hand.length,
-                    hand: p.hand.map(card => ({
-                        id: card.id,
-                        type: card.type,
-                        color: card.color,
-                        icon: card.icon,
-                        name: card.name
-                    })),
-                board: p.board.map(org => ({
-                    organ: {
-                        id: org.organ.id,
-                        type: org.organ.type,
-                        color: org.organ.color,
-                        icon: org.organ.icon,
-                        name: org.organ.name
-                    },
-                    viruses: org.viruses.map(c => ({ id: c.id, color: c.color, icon: c.icon })),
-                    medicines: org.medicines.map(c => ({ id: c.id, color: c.color, icon: c.icon }))
-                }))
-            };
-        })
-    };
-
-        const stateJson = JSON.stringify(stateObj);
-        
-        this.roomRef.child('gameState').set({
-            json: stateJson,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        });
+    // =========================================================================
+    // HOST: Serialize full game state and push to Firebase
+    // =========================================================================
+    _serializeCard(card) {
+        if (!card) return null;
+        return {
+            id: card.id || null,
+            type: card.type || 'unknown',
+            color: card.color || 'none',
+            icon: card.icon || '',
+            name: card.name || '',
+            desc: card.desc || '',
+            action: card.action || null
+        };
     }
 
+    _serializeSlot(slot) {
+        if (!slot || !slot.organ) return null;
+        return {
+            organ: this._serializeCard(slot.organ),
+            viruses: (slot.viruses || []).map(v => this._serializeCard(v)),
+            medicines: (slot.medicines || []).map(m => this._serializeCard(m))
+        };
+    }
+
+    syncAndBroadcast() {
+        if (!this.isHost || !this.roomRef) return;
+
+        try {
+            const stateObj = {
+                numPlayers: this.game.numPlayers,
+                activePlayerIndex: this.game.activePlayerIndex,
+                isGameOver: this.game.isGameOver,
+                winnerIndex: this.game.winner ? this.game.winner.index : -1,
+                historyLog: this.game.historyLog.slice(-5),
+                deckCount: this.game.deck.length,
+                discardCount: this.game.discardPile.length,
+                quarantineCount: this.game.quarantineZone ? this.game.quarantineZone.length : 0,
+                players: this.game.players.map((p, index) => {
+                    return {
+                        name: p.name,
+                        index: p.index,
+                        peerId: p.peerId || (this.playersList[index] ? this.playersList[index].peerId : null),
+                        isBot: false,
+                        hand: p.hand.map(c => this._serializeCard(c)),
+                        board: p.board.map(slot => this._serializeSlot(slot)).filter(s => s !== null),
+                        shieldActive: !!p.shieldActive,
+                        quarantined: !!p.quarantined,
+                        gloveActive: !!p.gloveActive,
+                        trickOrTreatActive: !!p.trickOrTreatActive
+                    };
+                })
+            };
+
+            const stateJson = JSON.stringify(stateObj);
+            
+            this.roomRef.child('gameState').set({
+                json: stateJson,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        } catch (e) {
+            console.error("syncAndBroadcast error:", e);
+        }
+    }
+
+    // =========================================================================
+    // CLIENT: Receive and apply game state from host
+    // =========================================================================
     syncGameState(syncState) {
         if (this.isHost) return;
 
@@ -251,30 +263,61 @@ class BioDefensaMultiplayer {
         this.game.activePlayerIndex = syncState.activePlayerIndex;
         this.game.isGameOver = syncState.isGameOver;
         
-        if (syncState.winnerIndex !== -1) {
-            this.game.winner = { name: syncState.players[syncState.winnerIndex].name, index: syncState.winnerIndex };
+        if (syncState.winnerIndex !== -1 && syncState.players[syncState.winnerIndex]) {
+            this.game.winner = { 
+                name: syncState.players[syncState.winnerIndex].name, 
+                index: syncState.winnerIndex 
+            };
         } else {
             this.game.winner = null;
         }
         
         this.game.historyLog = syncState.historyLog || [];
-        this.game.deck = new Array(syncState.deckCount).fill({ type: 'back' });
-        this.game.discardPile = new Array(syncState.discardCount).fill({ type: 'back' });
-        this.game.quarantineZone = new Array(syncState.quarantineCount).fill({ type: 'back' });
+        this.game.deck = new Array(syncState.deckCount || 0).fill({ type: 'back' });
+        this.game.discardPile = new Array(syncState.discardCount || 0).fill({ type: 'back' });
+        this.game.quarantineZone = new Array(syncState.quarantineCount || 0).fill({ type: 'back' });
 
         this.game.players = syncState.players.map(p => ({
             name: p.name,
+            index: p.index,
             peerId: p.peerId,
-            isBot: p.isBot,
-            botDifficulty: p.botDifficulty,
-            hand: p.hand || new Array(p.handCount).fill({ type: 'back' }),
-            board: p.board.map(org => {
-                const organObj = { ...org };
-                organObj.isDestroyed = () => organObj.viruses && organObj.viruses.length >= 2;
-                organObj.isImmunized = () => organObj.medicines && organObj.medicines.length >= 2;
-                organObj.isHealthy = () => !organObj.isDestroyed() && (!organObj.viruses || organObj.viruses.length === 0);
-                return organObj;
-            })
+            isBot: false,
+            hand: (p.hand || []).map(c => ({
+                id: c.id,
+                type: c.type || 'unknown',
+                color: c.color || 'none',
+                icon: c.icon || '',
+                name: c.name || '',
+                desc: c.desc || '',
+                action: c.action || null
+            })),
+            board: (p.board || []).map(slot => ({
+                organ: {
+                    id: slot.organ.id,
+                    type: slot.organ.type || 'organ',
+                    color: slot.organ.color || 'none',
+                    icon: slot.organ.icon || '',
+                    name: slot.organ.name || ''
+                },
+                viruses: (slot.viruses || []).map(v => ({
+                    id: v.id,
+                    type: v.type || 'virus',
+                    color: v.color || 'none',
+                    icon: v.icon || '',
+                    name: v.name || ''
+                })),
+                medicines: (slot.medicines || []).map(m => ({
+                    id: m.id,
+                    type: m.type || 'medicine',
+                    color: m.color || 'none',
+                    icon: m.icon || '',
+                    name: m.name || ''
+                }))
+            })),
+            shieldActive: !!p.shieldActive,
+            quarantined: !!p.quarantined,
+            gloveActive: !!p.gloveActive,
+            trickOrTreatActive: !!p.trickOrTreatActive
         }));
 
         this.onGameStateSync(syncState);
@@ -284,10 +327,15 @@ class BioDefensaMultiplayer {
         }
     }
 
+    // =========================================================================
+    // Get my player index based on peerId
+    // =========================================================================
     getMyPlayerIndex() {
+        // First try matching by peerId
         const idx = this.game.players.findIndex(p => p.peerId === this.myPeerId);
         if (idx !== -1) return idx;
         
+        // Fallback: match by name
         const myName = `${this.myAvatar} ${this.myNickname}`;
         const idxName = this.game.players.findIndex(p => p.name === myName);
         return idxName !== -1 ? idxName : 0;
@@ -299,6 +347,9 @@ class BioDefensaMultiplayer {
         }
     }
 
+    // =========================================================================
+    // CLIENT: Send an action to the host via Firebase
+    // =========================================================================
     sendAction(actionType, data) {
         if (this.isHost) {
             this.handleClientAction(this.myPeerId, { type: actionType, ...data });
@@ -312,19 +363,27 @@ class BioDefensaMultiplayer {
         }
     }
 
+    // =========================================================================
+    // HOST: Process an action received from a client
+    // =========================================================================
     handleClientAction(peerId, data) {
         if (!this.isHost) return;
 
-        const playerObj = this.playersList.find(p => p.peerId === peerId);
-        if (!playerObj) return;
-
-        const pName = `${playerObj.avatar} ${playerObj.nickname}`;
-        const playerIndex = this.game.players.findIndex(p => p.name === pName);
-
-        if (playerIndex === -1) return;
+        // Find which game player this peerId maps to
+        const playerIndex = this.game.players.findIndex(p => p.peerId === peerId);
+        if (playerIndex === -1) {
+            console.warn("handleClientAction: unknown peerId", peerId);
+            return;
+        }
 
         if (data.type === 'play') {
-            this.game.playCard(playerIndex, data.cardId, data.targetPlayerIndex, data.targetOrganIndex, data.extraParams);
+            this.game.playCard(
+                playerIndex, 
+                data.cardId, 
+                data.targetPlayerIndex, 
+                data.targetOrganIndex, 
+                data.extraParams || {}
+            );
         } 
         else if (data.type === 'discard') {
             const cardIds = data.cardIds || [];
