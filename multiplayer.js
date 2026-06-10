@@ -131,6 +131,7 @@ class BioDefensaMultiplayer {
             const resp = snapshot.val();
             if (resp) {
                 if (window.hideWaitingForReaction) window.hideWaitingForReaction();
+                this.roomRef.child('reactions').remove(); // Host cleans up the reactions node
                 
                 const data = resp.data;
                 const extraParams = data.extraParams || {};
@@ -487,7 +488,6 @@ class BioDefensaMultiplayer {
                 data: data,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
-            this.roomRef.child('reactions').remove();
         }
     }
 

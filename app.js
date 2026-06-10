@@ -781,6 +781,8 @@ window.confirmAlienTransplant = (cardId, p1Idx, org1Idx, p2Idx, org2Idx) => {
 };
 
 // --- REACTION SYSTEM ---
+window.currentPendingReaction = null;
+
 window.showReactionModal = (attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId) => {
     const modal = document.getElementById('choiceModal');
     const title = document.getElementById('choiceModalTitle');
@@ -788,18 +790,24 @@ window.showReactionModal = (attackerIdx, cardId, targetIdx, targetOrganIdx, extr
     
     const attackerName = game.players[attackerIdx].name;
     
+    // Store in global window variable to avoid any quote escaping issues in HTML attributes
+    window.currentPendingReaction = { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId };
+    
     setModalIcon('🛡️');
     title.textContent = `¡${attackerName} te está atacando! Tienes un Traje de Protección. ¿Deseas usarlo para bloquear el ataque?`;
     opts.innerHTML = `
-        <button class="btn btn-primary" onclick="confirmReaction(true, ${attackerIdx}, '${cardId}', ${targetIdx}, ${targetOrganIdx}, '${escape(JSON.stringify(extraParams))}', '${shieldCardId}')">🛡️ Usar Traje (Bloquear)</button>
-        <button class="btn btn-danger" onclick="confirmReaction(false, ${attackerIdx}, '${cardId}', ${targetIdx}, ${targetOrganIdx}, '${escape(JSON.stringify(extraParams))}', '${shieldCardId}')">Recibir Ataque</button>
+        <button class="btn btn-primary" onclick="confirmReaction(true)">🛡️ Usar Traje (Bloquear)</button>
+        <button class="btn btn-danger" onclick="confirmReaction(false)">Recibir Ataque</button>
     `;
     modal.style.display = 'flex';
 };
 
-window.confirmReaction = (accept, attackerIdx, cardId, targetIdx, targetOrganIdx, extraParamsStr, shieldCardId) => {
+window.confirmReaction = (accept) => {
     document.getElementById('choiceModal').style.display = 'none';
-    const extraParams = JSON.parse(unescape(extraParamsStr));
+    if (!window.currentPendingReaction) return;
+    
+    const { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId } = window.currentPendingReaction;
+    window.currentPendingReaction = null;
     
     if (multiplayer) {
         multiplayer.sendReactionResponse(accept, { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId });
