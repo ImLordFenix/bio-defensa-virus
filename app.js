@@ -619,7 +619,11 @@ function triggerTransplant(cardId, enemyPlayerIdx, enemyOrganIdx) {
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
 
-    title.textContent = "Elige tu órgano para trasplantar";
+    const targetSlot = game.players[enemyPlayerIdx].board[enemyOrganIdx];
+    const targetOrganName = `${targetSlot.organ.name} (${targetSlot.organ.color})`;
+    const targetPlayerName = game.players[enemyPlayerIdx].name;
+
+    title.textContent = `Vas a quitarle ${targetOrganName} a ${targetPlayerName}. Elige tu órgano para darle a cambio:`;
     opts.innerHTML = myPlayer.board.map((slot, idx) => `
         <button class="btn btn-secondary" onclick="confirmTransplant('${cardId}', ${enemyPlayerIdx}, ${enemyOrganIdx}, ${idx})">
             ${slot.organ.name} (${slot.organ.color})
@@ -704,7 +708,10 @@ function triggerAlienTransplant(cardId, firstPlayerIdx, firstOrganIdx) {
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
 
-    title.textContent = "Elige el segundo órgano para intercambiar con " + firstSlot.organ.name;
+    const targetOrganName = `${firstSlot.organ.name} (${firstSlot.organ.color})`;
+    const targetPlayerName = firstPlayer.name;
+
+    title.textContent = `Trasplante Alienígena: Elegiste ${targetOrganName} de ${targetPlayerName}. Elige el segundo órgano para el intercambio:`;
     
     let optionsHtml = '';
     game.players.forEach(p => {
