@@ -106,7 +106,11 @@ class BioDefensaMultiplayer {
         this.roomRef.child('players').on('value', snapshot => {
             if (!snapshot.exists()) return;
             const playersMap = snapshot.val();
-            this.playersList = Object.values(playersMap);
+            this.playersList = Object.values(playersMap).sort((a, b) => {
+                if (a.isHost) return -1;
+                if (b.isHost) return 1;
+                return a.peerId.localeCompare(b.peerId);
+            });
             this.onPlayerJoined(null);
         });
         
@@ -150,7 +154,11 @@ class BioDefensaMultiplayer {
                 return;
             }
             const playersMap = snapshot.val();
-            this.playersList = Object.values(playersMap);
+            this.playersList = Object.values(playersMap).sort((a, b) => {
+                if (a.isHost) return -1;
+                if (b.isHost) return 1;
+                return a.peerId.localeCompare(b.peerId);
+            });
             this.onPlayerJoined(null);
         });
         
