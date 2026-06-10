@@ -414,6 +414,18 @@ function handleBoardDrop(ev) {
         } else {
             executePlay(cardId, myPlayerIndex, null);
         }
+    } else if (card.type === 'special') {
+        const act = card.action;
+        // Global specials that don't need a specific target organ
+        if (['contagion', 'latex_glove', 'extra_time', 'apparition'].includes(act)) {
+            executePlay(cardId, myPlayerIndex, null);
+        } else if (act === 'body_swap') {
+            triggerBodySwapDirection(cardId);
+        } else if (act === 'transplant' || act === 'steal_organ' || act === 'alien_transplant') {
+            showCustomAlert(`Para usar esta carta, debes arrastrarla directamente sobre el órgano del oponente en la mesa.`, 'info');
+        } else {
+            showCustomAlert("Esta carta especial requiere que la arrastres sobre un jugador u órgano específico.", 'info');
+        }
     }
 }
 
