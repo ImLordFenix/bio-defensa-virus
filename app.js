@@ -456,9 +456,7 @@ function handleDiscardDrop(ev) {
     if (!cardId) return;
 
     if (multiplayer && !multiplayer.isHost) {
-        multiplayer.sendToHost({
-            type: 'action',
-            actionType: 'discard',
+        multiplayer.sendAction('discard', {
             cardIds: [cardId]
         });
     } else {
@@ -468,9 +466,7 @@ function handleDiscardDrop(ev) {
 
 function executePlay(cardId, targetPlayerIndex, targetOrganIndex, extraParams = {}) {
     if (multiplayer && !multiplayer.isHost) {
-        multiplayer.sendToHost({
-            type: 'action',
-            actionType: 'play',
+        multiplayer.sendAction('play', {
             cardId: cardId,
             targetPlayerIndex: targetPlayerIndex,
             targetOrganIndex: targetOrganIndex,
@@ -728,11 +724,7 @@ function discardSelectedCards() {
     selectedCardsForDiscard.clear();
 
     if (multiplayer && !multiplayer.isHost) {
-        multiplayer.sendToHost({
-            type: 'action',
-            actionType: 'discard',
-            cardIds: cardIdsArray
-        });
+        multiplayer.sendAction('discard', { cardIds: cardIdsArray });
     } else {
         game.discardCards(myPlayerIndex, cardIdsArray);
     }

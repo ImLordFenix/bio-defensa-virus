@@ -183,6 +183,9 @@ class BioDefensaMultiplayer {
 
         const names = this.playersList.map(p => `${p.avatar} ${p.nickname}`);
         this.game.setupGame(names);
+        
+        // In multiplayer, all connected peers are humans, not bots
+        this.game.players.forEach(p => p.isBot = false);
 
         this.game.onStateChange = () => {
             this.syncAndBroadcast();
@@ -320,33 +323,14 @@ class BioDefensaMultiplayer {
 
         if (playerIndex === -1) return;
 
-        if (data.type === 'play_card' || data.actionType === 'play_card') {
-            const cardObj = this.game.players[playerIndex].hand[data.cardIndex];
-            if (!cardObj) return;
-            
-            const moveData = {
-                card: cardObj,
-                playerIndex: playerIndex,
-                targetPlayerIndex: data.targetPlayerIndex,
-                targetOrganIndex: data.targetOrganIndex,
-                secondaryTargetPlayerIndex: data.secondaryTargetPlayerIndex,
-                secondaryTargetOrganIndex: data.secondaryTargetOrganIndex
-            };
-
-            const isValid = this.game.validateMove(moveData);
-            if (isValid) {
-                this.game.playCard(moveData);
-            }
+        if (data.type === 'play') {
+            this.game.playCard(playerIndex, data.cardId, data.targetPlayerIndex, data.targetOrganIndex, data.extraParams);
         } 
-        else if (data.type === 'discard' || data.actionType === 'discard') {
-            const indices = data.indices || [];
-            indices.sort((a,b) => b - a);
-            indices.forEach(idx => {
-                const c = this.game.players[playerIndex].hand.splice(idx, 1)[0];
-                if (c) this.game.discardPile.push(c);
-            });
-            this.game.replenishHand(this.game.players[playerIndex]);
-            this.game.endTurn();
+        else if (data.type === 'discard') {
+            const cardIds = data.cardIds || [];
+            if (cardIds.length > 0) {
+                this.game.discardCards(playerIndex, cardIds);
+            }
         }
     }
 }
