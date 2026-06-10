@@ -239,7 +239,13 @@ class BioDefensaMultiplayer {
                 historyLog: this.game.historyLog.slice(-5),
                 deckCount: this.game.deck.length,
                 discardCount: this.game.discardPile.length,
+                lastDiscardCard: this.game.discardPile.length > 0 
+                    ? this._serializeCard(this.game.discardPile[this.game.discardPile.length - 1]) 
+                    : null,
                 quarantineCount: this.game.quarantineZone ? this.game.quarantineZone.length : 0,
+                lastQuarantineCard: (this.game.quarantineZone && this.game.quarantineZone.length > 0) 
+                    ? this._serializeCard(this.game.quarantineZone[this.game.quarantineZone.length - 1]) 
+                    : null,
                 players: this.game.players.map((p, index) => {
                     return {
                         name: p.name,
@@ -288,8 +294,24 @@ class BioDefensaMultiplayer {
         
         this.game.historyLog = syncState.historyLog || [];
         this.game.deck = new Array(syncState.deckCount || 0).fill({ type: 'back' });
-        this.game.discardPile = new Array(syncState.discardCount || 0).fill({ type: 'back' });
-        this.game.quarantineZone = new Array(syncState.quarantineCount || 0).fill({ type: 'back' });
+        
+        // Rebuild discard pile with the real last card so rendering shows the correct card
+        const discardCount = syncState.discardCount || 0;
+        if (discardCount > 0 && syncState.lastDiscardCard) {
+            const fillers = new Array(Math.max(0, discardCount - 1)).fill({ type: 'back' });
+            this.game.discardPile = [...fillers, syncState.lastDiscardCard];
+        } else {
+            this.game.discardPile = [];
+        }
+        
+        // Rebuild quarantine zone with the real last card
+        const quarantineCount = syncState.quarantineCount || 0;
+        if (quarantineCount > 0 && syncState.lastQuarantineCard) {
+            const fillers = new Array(Math.max(0, quarantineCount - 1)).fill({ type: 'back' });
+            this.game.quarantineZone = [...fillers, syncState.lastQuarantineCard];
+        } else {
+            this.game.quarantineZone = [];
+        }
 
         this.game.players = syncState.players.map(p => ({
             name: p.name,
