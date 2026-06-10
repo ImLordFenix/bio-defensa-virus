@@ -63,7 +63,6 @@ class VirusGame {
                 difficulty: difficulty,
                 hand: [],
                 board: [],
-                shieldActive: false, 
                 quarantined: false,
                 gloveActive: false, // Latex glove effect active
                 trickOrTreatActive: false // Halloween curse
@@ -267,7 +266,7 @@ class VirusGame {
                 
                 return { valid: true };
             }
-            if (act === "contagion" || act === "latex_glove" || act === "body_swap" || act === "extra_time" || act === "shield") {
+            if (act === "contagion" || act === "latex_glove" || act === "body_swap" || act === "extra_time") {
                 return { valid: true };
             }
             if (act === "medical_error" || act === "second_opinion" || act === "apparition") {
@@ -467,22 +466,44 @@ class VirusGame {
 
         this.checkVictory();
 
-        let keepsTurn = false;
+        // Horas Extra: player plays this card, then gets to play remaining 2 cards
         if (card.type === 'special' && card.action === 'extra_time') {
-            keepsTurn = true;
-            this.log(`¡${player.name} juega un turno extra por Horas Extra!`, { icon: '⏰' });
-        }
-
-        this.refillHand(player);
-
-        if (this.isGameOver) {
-            this.onGameOver(this.winner);
-        } else {
-            if (!keepsTurn) {
-                this.endTurn();
+            this.log(`¡${player.name} activó Horas Extra! Puede jugar sus ${player.hand.length} cartas restantes.`, { icon: '⏰' });
+            player.extraPlays = (player.extraPlays || 0) + player.hand.length;
+            // Don't refill hand yet — player must play remaining cards first
+            if (this.isGameOver) {
+                this.onGameOver(this.winner);
             } else {
                 this.startTimer();
                 this.onStateChange();
+            }
+        } else if (player.extraPlays && player.extraPlays > 0) {
+            // Playing one of the extra plays from Horas Extra
+            player.extraPlays--;
+            if (player.extraPlays <= 0) {
+                // All extra plays used, refill and end turn
+                delete player.extraPlays;
+                this.refillHand(player);
+                if (this.isGameOver) {
+                    this.onGameOver(this.winner);
+                } else {
+                    this.endTurn();
+                }
+            } else {
+                // Still has extra plays remaining
+                if (this.isGameOver) {
+                    this.onGameOver(this.winner);
+                } else {
+                    this.startTimer();
+                    this.onStateChange();
+                }
+            }
+        } else {
+            this.refillHand(player);
+            if (this.isGameOver) {
+                this.onGameOver(this.winner);
+            } else {
+                this.endTurn();
             }
         }
 
@@ -530,7 +551,7 @@ class VirusGame {
                     const vir = slot.viruses[slot.viruses.length - 1];
                     let found = false;
                     for (let other of this.players) {
-                        if (other.index === player.index || other.shieldActive) continue;
+                        if (other.index === player.index) continue;
                         for (let otherIdx = 0; otherIdx < other.board.length; otherIdx++) {
                             const otherSlot = other.board[otherIdx];
                             if (otherSlot.organ.color === 'bionic' || otherSlot.medicines.length > 0 || otherSlot.viruses.length > 0) continue;
@@ -596,8 +617,12 @@ class VirusGame {
                     this.discardPile.push(disc);
                     this.log(`Experimento Fallido actuó como medicina curando el virus de ${targetPlayer.name}.`, { icon: '🧪' });
                 } else {
-                    slot.medicines.push({ name: "Vacuna Fallida", color: "multicolor", type: "medicine", icon: "💊" });
-                    this.log(`Experimento Fallido actuó como vacuna en ${targetPlayer.name}.`, { icon: '🧪' });
+                    if (slot.medicines.length < 2) {
+                        slot.medicines.push({ name: "Vacuna Fallida", color: "multicolor", type: "medicine", icon: "💊" });
+                        this.log(`Experimento Fallido actuó como vacuna en ${targetPlayer.name}.`, { icon: '🧪' });
+                    } else {
+                        this.log(`El órgano ya está inmunizado, la vacuna no tiene efecto.`, { icon: '🧪' });
+                    }
                 }
             } else {
                 if (slot.medicines.length > 0) {
@@ -670,9 +695,6 @@ class VirusGame {
         this.activePlayerIndex = (this.activePlayerIndex + 1) % this.numPlayers;
         
         const nextPlayer = this.players[this.activePlayerIndex];
-        if (nextPlayer.shieldActive) {
-            nextPlayer.shieldActive = false;
-        }
         
         if (nextPlayer.quarantined) {
             nextPlayer.quarantined = false;

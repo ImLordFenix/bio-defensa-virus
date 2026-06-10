@@ -595,6 +595,11 @@ window.restartSameGame = function() {
 };
 
 // --- Interactive Selection Modals ---
+function setModalIcon(emoji) {
+    const iconEl = document.querySelector('.choice-modal-icon');
+    if (iconEl) iconEl.textContent = emoji;
+}
+
 function triggerMutanteSelection(cardId) {
     const myPlayer = game.players[myPlayerIndex];
     if (myPlayer.board.length === 0) {
@@ -605,13 +610,14 @@ function triggerMutanteSelection(cardId) {
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
 
+    setModalIcon('🎃');
     title.textContent = "Elige qué órgano descartar por el Órgano Mutante";
     opts.innerHTML = myPlayer.board.map((slot, idx) => `
         <button class="btn btn-secondary" onclick="confirmMutante('${cardId}', ${idx})">
             ${slot.organ.name} (${slot.organ.color})
         </button>
     `).join('');
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 }
 
 window.confirmMutante = (cardId, replacedIndex) => {
@@ -638,13 +644,14 @@ function triggerTransplant(cardId, enemyPlayerIdx, enemyOrganIdx) {
     const targetOrganName = `${targetSlot.organ.name} (${targetSlot.organ.color})`;
     const targetPlayerName = game.players[enemyPlayerIdx].name;
 
+    setModalIcon('🔄');
     title.textContent = `Vas a quitarle ${targetOrganName} a ${targetPlayerName}. Elige tu órgano para darle a cambio:`;
     opts.innerHTML = myPlayer.board.map((slot, idx) => `
         <button class="btn btn-secondary" onclick="confirmTransplant('${cardId}', ${enemyPlayerIdx}, ${enemyOrganIdx}, ${idx})">
             ${slot.organ.name} (${slot.organ.color})
         </button>
     `).join('');
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 }
 
 window.confirmTransplant = (cardId, enemyPlayerIdx, enemyOrganIdx, myOrganIdx) => {
@@ -661,12 +668,13 @@ function triggerExperimentChoice(cardId, targetPlayerIdx, targetOrganIdx) {
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
 
+    setModalIcon('🧪');
     title.textContent = "¿Cómo actuará tu Experimento Fallido?";
     opts.innerHTML = `
         <button class="btn btn-primary" onclick="confirmExperiment('${cardId}', ${targetPlayerIdx}, ${targetOrganIdx}, 'medicine')">Cura/Vacuna</button>
         <button class="btn btn-danger" onclick="confirmExperiment('${cardId}', ${targetPlayerIdx}, ${targetOrganIdx}, 'virus')">Infección/Extirpación</button>
     `;
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 }
 
 window.confirmExperiment = (cardId, targetPlayerIdx, targetOrganIdx, choice) => {
@@ -679,12 +687,13 @@ function triggerBodySwapDirection(cardId) {
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
 
+    setModalIcon('🧱');
     title.textContent = "Elige el sentido de Cambio de Cuerpos";
     opts.innerHTML = `
         <button class="btn btn-primary" onclick="confirmBodySwap('${cardId}', 'clockwise')">Horario ➡️</button>
         <button class="btn btn-secondary" onclick="confirmBodySwap('${cardId}', 'counterclockwise')">Antihorario ⬅️</button>
     `;
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 }
 
 window.confirmBodySwap = (cardId, dir) => {
@@ -703,13 +712,14 @@ function triggerQuarantineChoice(cardId, targetPlayerIdx, targetOrganIdx) {
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
 
+    setModalIcon('🚧');
     title.textContent = "Elige el virus a retirar permanentemente";
     opts.innerHTML = slot.viruses.map((v, idx) => `
         <button class="btn btn-danger" onclick="confirmQuarantine('${cardId}', ${targetPlayerIdx}, ${targetOrganIdx}, ${idx})">
             ${v.name}
         </button>
     `).join('');
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 }
 
 window.confirmQuarantine = (cardId, targetPlayerIdx, targetOrganIdx, virusIndex) => {
@@ -734,6 +744,7 @@ function triggerAlienTransplant(cardId, firstPlayerIdx, firstOrganIdx) {
     const targetOrganName = `${firstSlot.organ.name} (${firstSlot.organ.color})`;
     const targetPlayerName = firstPlayer.name;
 
+    setModalIcon('👽');
     title.textContent = `Trasplante Alienígena: Elegiste ${targetOrganName} de ${targetPlayerName}. Elige el segundo órgano para el intercambio:`;
     
     let optionsHtml = '';
@@ -756,7 +767,7 @@ function triggerAlienTransplant(cardId, firstPlayerIdx, firstOrganIdx) {
     }
 
     opts.innerHTML = optionsHtml;
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 }
 
 window.confirmAlienTransplant = (cardId, p1Idx, org1Idx, p2Idx, org2Idx) => {
@@ -777,12 +788,13 @@ window.showReactionModal = (attackerIdx, cardId, targetIdx, targetOrganIdx, extr
     
     const attackerName = game.players[attackerIdx].name;
     
+    setModalIcon('🛡️');
     title.textContent = `¡${attackerName} te está atacando! Tienes un Traje de Protección. ¿Deseas usarlo para bloquear el ataque?`;
     opts.innerHTML = `
         <button class="btn btn-primary" onclick="confirmReaction(true, ${attackerIdx}, '${cardId}', ${targetIdx}, ${targetOrganIdx}, '${escape(JSON.stringify(extraParams))}', '${shieldCardId}')">🛡️ Usar Traje (Bloquear)</button>
         <button class="btn btn-danger" onclick="confirmReaction(false, ${attackerIdx}, '${cardId}', ${targetIdx}, ${targetOrganIdx}, '${escape(JSON.stringify(extraParams))}', '${shieldCardId}')">Recibir Ataque</button>
     `;
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 };
 
 window.confirmReaction = (accept, attackerIdx, cardId, targetIdx, targetOrganIdx, extraParamsStr, shieldCardId) => {
@@ -812,9 +824,10 @@ window.showWaitingForReaction = (targetName) => {
     const title = document.getElementById('choiceModalTitle');
     const opts = document.getElementById('choiceModalOptions');
     
+    setModalIcon('⏳');
     title.textContent = `Esperando a que ${targetName} decida si usa su Traje de Protección...`;
     opts.innerHTML = `<div class="loader" style="margin: 20px auto; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>`;
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 };
 
 window.hideWaitingForReaction = () => {
@@ -919,7 +932,7 @@ function renderGameBoard() {
         const gridStyle = `grid-row: ${pos.r}; grid-column: ${pos.c} / span ${pos.span};`;
 
         const isTurn = game.activePlayerIndex === p.index;
-        const shieldText = p.shieldActive ? '🛡️' : '';
+        const extraPlaysText = p.extraPlays ? `⏰×${p.extraPlays}` : '';
         const quarantineText = p.quarantined ? '🚧' : '';
         const gloveText = p.gloveActive ? '🧤' : '';
         const trickText = p.trickOrTreatActive ? '🎃' : '';
@@ -966,7 +979,7 @@ function renderGameBoard() {
 
             gridHTML += `
                 <div class="player-board-panel glass-panel ${isTurn ? 'active-turn' : ''}" style="${gridStyle}" ondragover="handleBoardDragOver(event)" ondragleave="handleBoardDragLeave(event)" ondrop="handleBoardDrop(event)">
-                    <div class="rival-name">TÚ (${p.name.replace(/.* /,'')}) ${shieldText} ${quarantineText} ${gloveText} ${trickText}</div>
+                    <div class="rival-name">TÚ (${p.name.replace(/.* /,'')}) ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
                     <div class="organ-cards-row">${organsHTML}</div>
                 </div>
             `;
@@ -1001,7 +1014,7 @@ function renderGameBoard() {
 
             gridHTML += `
                 <div class="rival-board glass-panel ${isTurn ? 'active-turn' : ''}" style="${gridStyle}" ondragover="allowDrag(event)" ondrop="handleOrganDrop(event, ${p.index}, null)">
-                    <div class="rival-name">${p.name} ${shieldText} ${quarantineText} ${gloveText} ${trickText}</div>
+                    <div class="rival-name">${p.name} ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
                     <div class="rival-hand-indicator">Cartas: ${p.hand.length}</div>
                     <div class="organ-slots">
                         ${organIcons.length > 0 ? organIcons : '<span style="font-size:0.6rem; color:var(--text-muted)">Vacío</span>'}
