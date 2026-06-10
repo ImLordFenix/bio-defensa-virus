@@ -247,8 +247,36 @@ function initMultiplayer(nickname, avatar, isHost, code = null) {
         }
         
         myPlayerIndex = multiplayer.getMyPlayerIndex();
+        
+        // Render any new history log entries from the host
+        if (syncState.historyLog && syncState.historyLog.length > 0) {
+            const logsContainer = document.getElementById('tabLogsContent');
+            if (logsContainer) {
+                // Clear and re-render the latest logs from host
+                logsContainer.innerHTML = '';
+                syncState.historyLog.forEach(logObj => {
+                    addLogToUI(logObj);
+                });
+            }
+        }
+        
+        // Reset turn timer for guest
+        game.timeLeft = 30;
+        if (game.turnTimer) clearInterval(game.turnTimer);
+        game.turnTimer = setInterval(() => {
+            game.timeLeft--;
+            game.onTurnTimerTick(game.timeLeft);
+            if (game.timeLeft <= 0) {
+                clearInterval(game.turnTimer);
+            }
+        }, 1000);
+        game.onTurnTimerTick(game.timeLeft);
+        
         updateActiveTurnUI(syncState.activePlayerIndex);
         renderGameBoard();
+        
+        // Play a subtle sound to notify guest of state change
+        try { playSound('play_card'); } catch(e) {}
     };
 
     multiplayer.onError = (err) => {

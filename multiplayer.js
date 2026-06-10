@@ -181,8 +181,22 @@ class BioDefensaMultiplayer {
             p.peerId = this.playersList[i] ? this.playersList[i].peerId : null;
         });
 
+        // IMPORTANT: Chain the original onStateChange (which renders the board)
+        // instead of replacing it, so the host's UI keeps updating
+        const originalOnStateChange = this.game.onStateChange;
         this.game.onStateChange = () => {
+            if (typeof originalOnStateChange === 'function') {
+                originalOnStateChange();
+            }
             this.syncAndBroadcast();
+        };
+
+        // Also chain onTurnChange so host gets proper turn UI updates
+        const originalOnTurnChange = this.game.onTurnChange;
+        this.game.onTurnChange = (idx) => {
+            if (typeof originalOnTurnChange === 'function') {
+                originalOnTurnChange(idx);
+            }
         };
 
         this.syncAndBroadcast();
