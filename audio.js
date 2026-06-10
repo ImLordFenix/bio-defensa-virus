@@ -44,7 +44,9 @@ function stopBackgroundMusic() {
 
 function playSound(type) {
     try {
-        initAudio();
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
         if (!audioCtx) return;
 
         const volume = localStorage.getItem('bd_vol_sound') !== null ? parseFloat(localStorage.getItem('bd_vol_sound')) : 0.5;

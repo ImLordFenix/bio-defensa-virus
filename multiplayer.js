@@ -219,11 +219,13 @@ class BioDefensaMultiplayer {
                         name: card.name
                     })),
                 board: p.board.map(org => ({
-                    id: org.id,
-                    type: org.type,
-                    color: org.color,
-                    icon: org.icon,
-                    name: org.name,
+                    organ: {
+                        id: org.organ.id,
+                        type: org.organ.type,
+                        color: org.organ.color,
+                        icon: org.organ.icon,
+                        name: org.organ.name
+                    },
                     viruses: org.viruses.map(c => ({ id: c.id, color: c.color, icon: c.icon })),
                     medicines: org.medicines.map(c => ({ id: c.id, color: c.color, icon: c.icon }))
                 }))

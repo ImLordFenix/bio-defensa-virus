@@ -177,7 +177,9 @@ window.addEventListener('load', async () => {
 
     // Register user interactions to bypass audio autoplay blocks
     document.body.addEventListener('click', () => {
-        initAudio();
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
         if (parseFloat(localStorage.getItem('bd_vol_music') || 0.3) > 0 && !bgMusicInterval) {
             startBackgroundMusic();
         }
