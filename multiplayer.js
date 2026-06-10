@@ -122,6 +122,25 @@ class BioDefensaMultiplayer {
             }
             snapshot.ref.remove();
         });
+
+        this.roomRef.child('reaction_responses').on('child_added', snapshot => {
+            const resp = snapshot.val();
+            if (resp) {
+                if (window.hideWaitingForReaction) window.hideWaitingForReaction();
+                
+                const data = resp.data;
+                const extraParams = data.extraParams || {};
+                extraParams.skipReactionCheck = true;
+                if (resp.accept) {
+                    extraParams.reactionUsed = true;
+                    extraParams.shieldCardId = data.shieldCardId;
+                }
+                
+                this.game.playCard(data.attackerIdx, data.cardId, data.targetIdx, data.targetOrganIdx, extraParams);
+                this.syncAndBroadcast();
+            }
+            snapshot.ref.remove();
+        });
     }
 
     listenForClientEvents() {
@@ -148,6 +167,16 @@ class BioDefensaMultiplayer {
                 this.syncGameState(parsedState);
             } catch (e) {
                 console.error("Error parsing sync state", e);
+            }
+        });
+
+        this.roomRef.child('reactions').on('value', snapshot => {
+            if (!snapshot.exists()) return;
+            const req = snapshot.val();
+            if (req && req.targetPeerId === this.myPeerId) {
+                if (window.showReactionModal) {
+                    window.showReactionModal(req.data.attackerIdx, req.data.cardId, req.data.targetIdx, req.data.targetOrganIdx, req.data.extraParams, req.data.shieldCardId);
+                }
             }
         });
     }
@@ -387,9 +416,31 @@ class BioDefensaMultiplayer {
             if (!this.roomRef) return;
             this.roomRef.child('actions').push({
                 peerId: this.myPeerId,
-                data: { type: actionType, ...data },
+                data: Object.assign({ type: actionType }, data),
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
+        }
+    }
+
+    sendReactionResponse(accept, data) {
+        if (!this.roomRef) return;
+        if (this.isHost) {
+            if (window.hideWaitingForReaction) window.hideWaitingForReaction();
+            const extraParams = data.extraParams || {};
+            extraParams.skipReactionCheck = true;
+            if (accept) {
+                extraParams.reactionUsed = true;
+                extraParams.shieldCardId = data.shieldCardId;
+            }
+            this.game.playCard(data.attackerIdx, data.cardId, data.targetIdx, data.targetOrganIdx, extraParams);
+            this.syncAndBroadcast();
+        } else {
+            this.roomRef.child('reaction_responses').push({
+                accept: accept,
+                data: data,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            this.roomRef.child('reactions').remove();
         }
     }
 

@@ -743,6 +743,42 @@ window.confirmAlienTransplant = (cardId, p1Idx, org1Idx, p2Idx, org2Idx) => {
     });
 };
 
+// --- REACTION SYSTEM ---
+window.showReactionModal = (attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId) => {
+    const modal = document.getElementById('choiceModal');
+    const title = document.getElementById('choiceModalTitle');
+    const opts = document.getElementById('choiceModalOptions');
+    
+    const attackerName = game.players[attackerIdx].name;
+    
+    title.textContent = `¡${attackerName} te está atacando! Tienes un Traje de Protección. ¿Deseas usarlo para bloquear el ataque?`;
+    opts.innerHTML = `
+        <button class="btn btn-primary" onclick="confirmReaction(true, ${attackerIdx}, '${cardId}', ${targetIdx}, ${targetOrganIdx}, '${escape(JSON.stringify(extraParams))}', '${shieldCardId}')">🛡️ Usar Traje (Bloquear)</button>
+        <button class="btn btn-danger" onclick="confirmReaction(false, ${attackerIdx}, '${cardId}', ${targetIdx}, ${targetOrganIdx}, '${escape(JSON.stringify(extraParams))}', '${shieldCardId}')">Recibir Ataque</button>
+    `;
+    modal.style.display = 'block';
+};
+
+window.confirmReaction = (accept, attackerIdx, cardId, targetIdx, targetOrganIdx, extraParamsStr, shieldCardId) => {
+    document.getElementById('choiceModal').style.display = 'none';
+    const extraParams = JSON.parse(unescape(extraParamsStr));
+    multiplayer.sendReactionResponse(accept, { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId });
+};
+
+window.showWaitingForReaction = (targetName) => {
+    const modal = document.getElementById('choiceModal');
+    const title = document.getElementById('choiceModalTitle');
+    const opts = document.getElementById('choiceModalOptions');
+    
+    title.textContent = `Esperando a que ${targetName} decida si usa su Traje de Protección...`;
+    opts.innerHTML = `<div class="loader" style="margin: 20px auto; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>`;
+    modal.style.display = 'block';
+};
+
+window.hideWaitingForReaction = () => {
+    document.getElementById('choiceModal').style.display = 'none';
+};
+
 // --- Card Selection ---
 window.toggleCardSelection = (cardId, cardElement) => {
     if (game.activePlayerIndex !== myPlayerIndex) return;

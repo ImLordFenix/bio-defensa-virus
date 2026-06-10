@@ -337,37 +337,65 @@ class VirusGame {
     }
 
     playCard(playerIndex, cardId, targetPlayerIndex, targetOrganIndex = null, extraParams = {}) {
-        let val = this.validateMove(playerIndex, cardId, targetPlayerIndex, targetOrganIndex, extraParams);
-        
-        const player = this.players[playerIndex];
-        const cardIndex = player.hand.findIndex(c => c.id === cardId);
-        if (cardIndex === -1) return { valid: false, reason: "Carta no encontrada en mano." };
-        const card = player.hand[cardIndex];
-        const targetPlayer = this.players[targetPlayerIndex];
-
-        // --- TRAJE DE PROTECCIÓN AUTO-REACTION (From Hand) ---
-        if (val.valid && targetPlayerIndex !== playerIndex && targetPlayer) {
-            const isAttack = (card.type === 'virus') || 
-                             (card.type === 'special' && ['steal_organ', 'steal_color', 'transplant', 'alien_transplant', 'medical_error', 'trick_or_treat', 'second_opinion'].includes(card.action));
-                             
-            if (isAttack) {
-                const shieldIndex = targetPlayer.hand.findIndex(c => c.action === 'shield');
-                if (shieldIndex !== -1) {
-                    const shieldCard = targetPlayer.hand.splice(shieldIndex, 1)[0];
-                    this.discardPile.push(shieldCard);
-                    this.log(`¡${targetPlayer.name} bloqueó el ataque usando un Traje de Protección desde su mano!`, { icon: '🛡️', color: 'blue' });
-                    this.onSoundTrigger('error');
-                    this.onStateChange();
-                    return { valid: false, reason: "¡Tu ataque fue bloqueado automáticamente por un Traje de Protección! Elige otro objetivo." };
-                }
-            }
-        }
-
+        const val = this.validateMove(playerIndex, cardId, targetPlayerIndex, targetOrganIndex, extraParams);
         if (!val.valid) {
             this.onSoundTrigger('error');
             return val;
         }
 
+        const player = this.players[playerIndex];
+        const cardIndex = player.hand.findIndex(c => c.id === cardId);
+        const card = player.hand[cardIndex];
+        const targetPlayer = this.players[targetPlayerIndex];
+
+        // --- REACTION SYSTEM: Traje de Protección ---
+        if (!extraParams.skipReactionCheck && targetPlayerIndex !== playerIndex && targetPlayer) {
+            // Is it a targeted attack?
+            if (card.type === 'virus' || (card.type === 'special' && ['steal_organ', 'steal_color', 'transplant', 'medical_error', 'trick_or_treat', 'alien_transplant'].includes(card.action))) {
+                const shieldCard = targetPlayer.hand.find(c => c.type === 'special' && c.action === 'shield');
+                if (shieldCard) {
+                    if (targetPlayer.isBot) {
+                        // Bot auto-reacts
+                        extraParams.skipReactionCheck = true;
+                        extraParams.reactionUsed = true;
+                        extraParams.shieldCardId = shieldCard.id;
+                    } else {
+                        if (this.onReactionRequested) {
+                            this.onReactionRequested(playerIndex, cardId, targetPlayerIndex, targetOrganIndex, extraParams, shieldCard.id);
+                        }
+                        return { valid: true, pendingReaction: true };
+                    }
+                }
+            }
+        }
+
+        // Check if the attack was blocked by a reaction!
+        if (extraParams.reactionUsed) {
+            // The target player used Traje de Protección!
+            player.hand.splice(cardIndex, 1);
+            this.discardPile.push(card);
+            
+            const shieldIndex = targetPlayer.hand.findIndex(c => c.id === extraParams.shieldCardId);
+            if (shieldIndex !== -1) {
+                const shieldCard = targetPlayer.hand.splice(shieldIndex, 1)[0];
+                this.discardPile.push(shieldCard);
+            }
+            
+            this.log(`¡${targetPlayer.name} bloqueó el ataque de ${player.name} usando su Traje de Protección!`, { icon: '🛡️', color: 'blue' });
+            this.onSoundTrigger('play_card');
+            
+            this.refillHand(player);
+            this.refillHand(targetPlayer);
+            
+            if (this.isGameOver) {
+                this.onGameOver(this.winner);
+            } else {
+                this.endTurn();
+            }
+            return { valid: true };
+        }
+
+        // --- Normal Execution ---
         player.hand.splice(cardIndex, 1);
 
         // --- Play Resolutions ---
@@ -427,9 +455,8 @@ class VirusGame {
             } else {
                 slot.medicines.push(card);
                 if (card.isExperimental && slot.medicines.length < 2) {
-                    // Experimental medicines instantly immunize by counting as 2 medicines
-                    slot.medicines.push({ ...card, id: card.id + '_clone' });
-                    this.log(`${player.name} INMUNIZÓ instantáneamente el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
+                    slot.medicines.push(card); // Count as 2 medicines to auto-immunize
+                    this.log(`${player.name} inmunizó automáticamente el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
                 } else {
                     this.log(`${player.name} vacunó el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
                 }
