@@ -145,6 +145,8 @@ class BioDefensaMultiplayer {
             }
             snapshot.ref.remove();
         });
+
+        this.setupReactionsListener();
     }
 
     listenForClientEvents() {
@@ -178,12 +180,31 @@ class BioDefensaMultiplayer {
             }
         });
 
+        this.setupReactionsListener();
+    }
+
+    setupReactionsListener() {
         this.roomRef.child('reactions').on('value', snapshot => {
-            if (!snapshot.exists()) return;
+            if (!snapshot.exists()) {
+                if (window.hideWaitingForReaction) window.hideWaitingForReaction();
+                return;
+            }
             const req = snapshot.val();
-            if (req && req.targetPeerId === this.myPeerId) {
-                if (window.showReactionModal) {
-                    window.showReactionModal(req.data.attackerIdx, req.data.cardId, req.data.targetIdx, req.data.targetOrganIdx, req.data.extraParams, req.data.shieldCardId);
+            if (req) {
+                if (req.targetPeerId === this.myPeerId) {
+                    if (window.showReactionModal) {
+                        window.showReactionModal(req.data.attackerIdx, req.data.cardId, req.data.targetIdx, req.data.targetOrganIdx, req.data.extraParams, req.data.shieldCardId);
+                    }
+                } else {
+                    const attackerIndex = req.data.attackerIdx;
+                    const myIdx = this.getMyPlayerIndex();
+                    if (attackerIndex === myIdx) {
+                        const targetPlayer = this.game.players[req.data.targetIdx];
+                        const targetPlayerName = targetPlayer ? targetPlayer.name : "el oponente";
+                        if (window.showWaitingForReaction) {
+                            window.showWaitingForReaction(targetPlayerName);
+                        }
+                    }
                 }
             }
         });
@@ -204,6 +225,12 @@ class BioDefensaMultiplayer {
     startMultiplayerGame(mode, includeEvolution, includeHalloween) {
         if (!this.isHost) return;
 
+        // Clear any residual reactions in database on start/restart
+        if (this.roomRef) {
+            this.roomRef.child('reactions').remove();
+            this.roomRef.child('reaction_responses').remove();
+        }
+
         this.game.numPlayers = this.playersList.length;
         this.game.mode = mode;
         this.game.includeEvolution = includeEvolution;
@@ -217,6 +244,17 @@ class BioDefensaMultiplayer {
             p.isBot = false;
             p.peerId = this.playersList[i] ? this.playersList[i].peerId : null;
         });
+
+        // Register reaction requested handler for host to push to Firebase
+        this.game.onReactionRequested = (attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId) => {
+            const targetPlayer = this.game.players[targetIdx];
+            if (targetPlayer && this.roomRef) {
+                this.roomRef.child('reactions').set({
+                    targetPeerId: targetPlayer.peerId,
+                    data: { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId }
+                });
+            }
+        };
 
         // IMPORTANT: Chain the original onStateChange (which renders the board)
         // instead of replacing it, so the host's UI keeps updating
@@ -434,6 +472,7 @@ class BioDefensaMultiplayer {
         if (!this.roomRef) return;
         if (this.isHost) {
             if (window.hideWaitingForReaction) window.hideWaitingForReaction();
+            this.roomRef.child('reactions').remove();
             const extraParams = data.extraParams || {};
             extraParams.skipReactionCheck = true;
             if (accept) {
