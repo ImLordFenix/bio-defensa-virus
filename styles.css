@@ -276,8 +276,8 @@ body {
     grid-template-rows: repeat(4, 1fr);
     width: 100%;
     height: 100%;
-    gap: 16px;
-    padding: 24px;
+    gap: 12px;
+    padding: 12px;
 }
 
 /* Center Table shared card piles */
@@ -315,7 +315,7 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.6);
     overflow: hidden;
     width: 100%;
-    height: 135px;
+    height: 110px;
     align-self: center;
     position: relative;
     z-index: 10;
@@ -349,8 +349,7 @@ body {
     border: 2px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 8px 24px rgba(0,0,0,0.7);
     width: 100%;
-    height: 165px;
-    align-self: center;
+    height: 100%;
 }
 
 .player-board-panel.active-turn {
