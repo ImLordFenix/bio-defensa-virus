@@ -279,6 +279,7 @@ function initMultiplayer(nickname, avatar, isHost, code = null, gamesWon = 0) {
         game.timeLeft = 30;
         if (game.turnTimer) clearInterval(game.turnTimer);
         game.turnTimer = setInterval(() => {
+            if (game.pendingReaction) return; // Pause guest timer during reactions
             game.timeLeft--;
             game.onTurnTimerTick(game.timeLeft);
             if (game.timeLeft <= 0) {

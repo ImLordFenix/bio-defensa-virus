@@ -381,8 +381,8 @@ const CARD_TEMPLATES = {
             icon: `<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 11 2 2 4-4"/></svg>`, 
             desc: "Bloquea un virus o tratamiento dirigido a ti y lo redirige.", 
             rarity: "épico", 
-            isEvolution: true, 
-            qty: 0
+                        isEvolution: true, 
+            qty: 1
         },
         { 
             name: "Cuarentena", 

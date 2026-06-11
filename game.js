@@ -336,7 +336,7 @@ class VirusGame {
     }
 
     playCard(playerIndex, cardId, targetPlayerIndex, targetOrganIndex = null, extraParams = {}) {
-        if (extraParams.originalTargetPlayerIndex !== undefined) {
+        if (extraParams.originalTargetPlayerIndex !== undefined && extraParams.originalTargetPlayerIndex !== null) {
             targetPlayerIndex = extraParams.originalTargetPlayerIndex;
         }
         
