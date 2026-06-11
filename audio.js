@@ -8,6 +8,13 @@ let isMusicPlaying = false;
 // --- Background Music via Local MP3 ---
 let bgMusicPlayer = null;
 
+function getSafeVolume(key, defaultVal) {
+    const val = localStorage.getItem(key);
+    if (val === null || val === undefined || val === 'undefined' || val === 'null') return defaultVal;
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? defaultVal : parsed;
+}
+
 function initBgMusic() {
     if (!bgMusicPlayer) {
         bgMusicPlayer = new Audio('music.mp3');
@@ -19,7 +26,7 @@ function startBackgroundMusic() {
     if (isMusicPlaying) return;
     initBgMusic();
     
-    let vol = localStorage.getItem('bd_vol_music') !== null ? parseFloat(localStorage.getItem('bd_vol_music')) : 0.3;
+    let vol = getSafeVolume('bd_vol_music', 0.3);
     bgMusicPlayer.volume = vol;
     
     let playPromise = bgMusicPlayer.play();
@@ -49,8 +56,8 @@ function playSound(type) {
         }
         if (!audioCtx) return;
 
-        const volume = localStorage.getItem('bd_vol_sound') !== null ? parseFloat(localStorage.getItem('bd_vol_sound')) : 0.5;
-        if (volume === 0 || isNaN(volume)) return;
+        const volume = getSafeVolume('bd_vol_sound', 0.5);
+        if (volume === 0) return;
 
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -121,7 +128,7 @@ function unlockAudio() {
         audioCtx.resume();
     }
     
-    const musicVol = localStorage.getItem('bd_vol_music') !== null ? parseFloat(localStorage.getItem('bd_vol_music')) : 0.3;
+    const musicVol = getSafeVolume('bd_vol_music', 0.3);
     if (musicVol > 0) {
         startBackgroundMusic();
     }

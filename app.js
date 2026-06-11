@@ -122,8 +122,13 @@ window.addEventListener('load', async () => {
     await dbInstance.init();
     const profile = await dbInstance.getProfile();
 
-    localStorage.setItem('bd_vol_sound', profile.volumeSound);
-    localStorage.setItem('bd_vol_music', profile.volumeMusic);
+    // Ensure valid numerical volume defaults if database profile properties are missing/invalid
+    const parseVol = (v, fallback) => (v === undefined || v === null || isNaN(parseFloat(v))) ? fallback : parseFloat(v);
+    const soundVol = parseVol(profile.volumeSound, 0.5);
+    const musicVol = parseVol(profile.volumeMusic, 0.3);
+
+    localStorage.setItem('bd_vol_sound', soundVol);
+    localStorage.setItem('bd_vol_music', musicVol);
 
     // Music will start upon first user interaction via audio.js unlockAudio
 
@@ -1320,8 +1325,16 @@ function exitToLobby() {
 }
 
 window.openGameSettings = function() {
-    document.getElementById('gameSoundVol').value = localStorage.getItem('bd_vol_sound') || 0.5;
-    document.getElementById('gameMusicVol').value = localStorage.getItem('bd_vol_music') || 0.3;
+    const getSafeVol = (key, fallback) => {
+        const val = localStorage.getItem(key);
+        if (val === null || val === undefined || val === 'undefined' || val === 'null' || isNaN(parseFloat(val))) {
+            return fallback;
+        }
+        return parseFloat(val);
+    };
+
+    document.getElementById('gameSoundVol').value = getSafeVol('bd_vol_sound', 0.5);
+    document.getElementById('gameMusicVol').value = getSafeVol('bd_vol_music', 0.3);
 
     // Handle player management for host in multiplayer
     const kickSection = document.getElementById('kickPlayersSection');
@@ -1350,8 +1363,8 @@ window.closeGameSettings = function() {
 };
 
 window.saveGameConfig = async function() {
-    const soundVol = document.getElementById('gameSoundVol').value;
-    const musicVol = document.getElementById('gameMusicVol').value;
+    const soundVol = parseFloat(document.getElementById('gameSoundVol').value) || 0.0;
+    const musicVol = parseFloat(document.getElementById('gameMusicVol').value) || 0.0;
     
     localStorage.setItem('bd_vol_sound', soundVol);
     localStorage.setItem('bd_vol_music', musicVol);

@@ -114,6 +114,7 @@ class VirusGame {
             const card = activePlayer.hand[randomIndex];
             this.discardCards(this.activePlayerIndex, [card.id]);
         } else {
+            this.refillHand(activePlayer);
             this.endTurn();
         }
     }
@@ -620,6 +621,8 @@ class VirusGame {
             player.hand = [...targetPlayer.hand];
             targetPlayer.hand = tempHand;
             this.log(`Segunda Opinión: Manos intercambiadas entre ${player.name} y ${targetPlayer.name}.`, { icon: '📋' });
+            this.refillHand(player);
+            this.refillHand(targetPlayer);
         }
         else if (act === "quarantine") {
             const vIdx = extraParams.virusIndex || 0;
@@ -723,6 +726,12 @@ class VirusGame {
     endTurn() {
         if (this.isGameOver) return;
 
+        // Clear extra plays for the player whose turn is ending to prevent leaks
+        const activePlayer = this.players[this.activePlayerIndex];
+        if (activePlayer && activePlayer.extraPlays !== undefined) {
+            delete activePlayer.extraPlays;
+        }
+
         this.activePlayerIndex = (this.activePlayerIndex + 1) % this.numPlayers;
         
         const nextPlayer = this.players[this.activePlayerIndex];
@@ -739,6 +748,12 @@ class VirusGame {
             this.refillHand(nextPlayer);
             this.endTurn();
             return;
+        }
+
+        // Safety: Ensure next player has cards to play/discard when their turn begins
+        if (nextPlayer.hand.length === 0) {
+            this.log(`¡${nextPlayer.name} no tenía cartas y roba automáticamente!`, { icon: '🃏' });
+            this.refillHand(nextPlayer);
         }
 
         this.startTimer();
