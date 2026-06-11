@@ -268,6 +268,13 @@ class BioDefensaStorage {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 500);
         }, 4000);
+    getVictoryBadge(wins) {
+        if (wins >= 50) return { name: 'Plaquita de Diamante 💎', short: '💎 Diamante', emoji: '💎', color: '#00e1ff' };
+        if (wins >= 25) return { name: 'Plaquita de Platino 💿', short: '💿 Platino', emoji: '💿', color: '#e5e4e2' };
+        if (wins >= 10) return { name: 'Plaquita de Oro 🥇', short: '🥇 Oro', emoji: '🥇', color: '#ffd700' };
+        if (wins >= 5) return { name: 'Plaquita de Plata 🥈', short: '🥈 Plata', emoji: '🥈', color: '#c0c0c0' };
+        if (wins >= 1) return { name: 'Plaquita de Bronce 🥉', short: '🥉 Bronce', emoji: '🥉', color: '#cd7f32' };
+        return null;
     }
 
     // --- Core IDB Wrappers ---

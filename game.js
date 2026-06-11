@@ -473,12 +473,17 @@ class VirusGame {
                 this.log(`${player.name} curó el virus ${discVirus.name} de ${targetPlayer.name} usando ${card.name}.`, { icon: card.icon, color: card.color });
                 this.onSoundTrigger('cure');
             } else {
-                slot.medicines.push(card);
-                if (card.isExperimental && slot.medicines.length < 2) {
+                if (card.isExperimental && slot.medicines.length === 0) {
+                    slot.medicines.push(card);
                     slot.medicines.push({ ...card }); // Clone to avoid reference issues
                     this.log(`${player.name} inmunizó automáticamente el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
                 } else {
-                    this.log(`${player.name} vacunó el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
+                    slot.medicines.push(card);
+                    if (slot.medicines.length >= 2) {
+                        this.log(`${player.name} inmunizó el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
+                    } else {
+                        this.log(`${player.name} vacunó el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
+                    }
                 }
                 this.onSoundTrigger('play_card');
             }

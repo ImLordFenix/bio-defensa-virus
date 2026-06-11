@@ -6,6 +6,7 @@ let myPlayerIndex = 0;
 let selectedCardsForDiscard = new Set();
 let isBotMoving = false;
 let lastActivePlayerIndex = -1;
+let playerBadge = null;
 
 // --- Custom Alert Implementation (Bypasses Browser default dialogs) ---
 function showCustomAlert(message, type = 'info') {
@@ -121,6 +122,8 @@ function addChatToUI(author, message) {
 window.addEventListener('load', async () => {
     await dbInstance.init();
     const profile = await dbInstance.getProfile();
+    const stats = await dbInstance.getStats();
+    playerBadge = dbInstance.getVictoryBadge(stats.gamesWon);
 
     // Ensure valid numerical volume defaults if database profile properties are missing/invalid
     const parseVol = (v, fallback) => (v === undefined || v === null || isNaN(parseFloat(v))) ? fallback : parseFloat(v);
@@ -176,6 +179,10 @@ window.addEventListener('load', async () => {
             duration: duration,
             mode: game.mode
         });
+
+        // Update badge dynamically in case threshold was crossed
+        const stats = await dbInstance.getStats();
+        playerBadge = dbInstance.getVictoryBadge(stats.gamesWon);
     };
 
     // Register user interactions to bypass audio autoplay blocks
@@ -1152,9 +1159,11 @@ function renderGameBoard() {
                 }).join('');
             }
 
+            const badgeHTML = playerBadge ? `<span style="color:${playerBadge.color}; font-size:0.7rem; margin-left:5px; border:1px solid ${playerBadge.color}; padding:0px 4px; border-radius:4px; font-weight:800; text-transform:none;">${playerBadge.short}</span>` : '';
+
             gridHTML += `
                 <div class="player-board-panel glass-panel ${isTurn ? 'active-turn' : ''}" style="${gridStyle}" ondragover="handleBoardDragOver(event)" ondragleave="handleBoardDragLeave(event)" ondrop="handleBoardDrop(event)">
-                    <div class="rival-name">TÚ (${p.name.replace(/.* /,'')}) ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
+                    <div class="rival-name">TÚ (${p.name.replace(/.* /,'')})${badgeHTML} ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
                     <div class="organ-cards-row">${organsHTML}</div>
                 </div>
             `;

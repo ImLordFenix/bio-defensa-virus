@@ -70,6 +70,7 @@
             <div class="profile-input-group">
                 <label for="nicknameInput">Nombre del Investigador</label>
                 <input type="text" id="nicknameInput" value="Investigador" placeholder="Escribe tu apodo...">
+                <div id="badgeDisplay" style="margin-top: 5px; font-size: 0.75rem; font-weight: bold; display: none;"></div>
             </div>
         </div>
 
@@ -174,6 +175,7 @@
                     <div class="stat-label">Racha de Victorias</div>
                 </div>
             </div>
+            <div id="statsBadgeDisplay" style="margin-top: 15px; text-align: center; font-weight: bold;"></div>
             <h4 style="margin-top:20px;">Historial de Partidas</h4>
             <div id="matchHistoryList" style="max-height: 180px; overflow-y: auto; margin-top: 10px; font-size:0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
                 Cargando historial...
@@ -291,7 +293,22 @@
             
             if (profile.gameMode) document.getElementById('gameModeSelect').value = profile.gameMode;
             if (profile.botCount) document.getElementById('botCountSelect').value = profile.botCount;
+
+            // Load and display range badge
+            const stats = await dbInstance.getStats();
+            updateBadgeUI(stats.gamesWon);
         });
+
+        function updateBadgeUI(wins) {
+            const badge = dbInstance.getVictoryBadge(wins);
+            const badgeEl = document.getElementById('badgeDisplay');
+            if (badge) {
+                badgeEl.style.display = 'block';
+                badgeEl.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid ${badge.color}; color: ${badge.color};">🏆 Rango: ${badge.name}</span>`;
+            } else {
+                badgeEl.style.display = 'none';
+            }
+        }
 
         async function saveConfig() {
             const nickname = document.getElementById('nicknameInput').value || "Investigador";
@@ -349,6 +366,15 @@
 
             const winRate = stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
             document.getElementById('statsWinRate').textContent = winRate + '%';
+
+            // Load and display range badge in stats modal
+            const badge = dbInstance.getVictoryBadge(stats.gamesWon);
+            const statsBadgeEl = document.getElementById('statsBadgeDisplay');
+            if (badge) {
+                statsBadgeEl.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 15px; background: rgba(255,255,255,0.05); border: 1px solid ${badge.color}; color: ${badge.color};">Rango: ${badge.name}</span>`;
+            } else {
+                statsBadgeEl.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted);">Sin rango (gana 1 partida para conseguir una plaquita)</span>`;
+            }
 
             // Load history
             const history = await dbInstance.getMatchHistory();
