@@ -268,6 +268,8 @@ class BioDefensaStorage {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 500);
         }, 4000);
+    }
+
     getVictoryBadge(wins) {
         if (wins >= 50) return { name: 'Plaquita de Diamante 💎', short: '💎 Diamante', emoji: '💎', color: '#00e1ff' };
         if (wins >= 25) return { name: 'Plaquita de Platino 💿', short: '💿 Platino', emoji: '💿', color: '#e5e4e2' };

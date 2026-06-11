@@ -176,9 +176,14 @@
                 </div>
             </div>
             <div id="statsBadgeDisplay" style="margin-top: 15px; text-align: center; font-weight: bold;"></div>
+
+            <h4 style="margin-top:20px;">Plaquitas de Rango</h4>
+            <div id="statsBadgesList" style="max-height: 160px; overflow-y: auto; margin-top: 10px; font-size:0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
+                Cargando plaquitas...
+            </div>
             
-            <h4 style="margin-top:20px;">Logros y Plaquitas</h4>
-            <div id="statsAchievementsList" style="max-height: 180px; overflow-y: auto; margin-top: 10px; font-size:0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+            <h4 style="margin-top:20px;">Logros Científicos</h4>
+            <div id="statsAchievementsList" style="max-height: 160px; overflow-y: auto; margin-top: 10px; font-size:0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
                 Cargando logros...
             </div>
 
@@ -400,10 +405,40 @@
             const badge = dbInstance.getVictoryBadge(stats.gamesWon);
             const statsBadgeEl = document.getElementById('statsBadgeDisplay');
             if (badge) {
-                statsBadgeEl.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 15px; background: rgba(255,255,255,0.05); border: 1px solid ${badge.color}; color: ${badge.color};">Rango: ${badge.name}</span>`;
+                statsBadgeEl.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 15px; background: rgba(255,255,255,0.05); border: 1px solid ${badge.color}; color: ${badge.color};">Rango Actual: ${badge.name}</span>`;
             } else {
                 statsBadgeEl.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted);">Sin rango (gana 1 partida para conseguir una plaquita)</span>`;
             }
+
+            // Load and display all range badges (Plaquitas) list
+            const totalWins = stats.gamesWon;
+            const badgesList = [
+                { name: 'Plaquita de Bronce 🥉', req: 1, color: '#cd7f32', emoji: '🥉' },
+                { name: 'Plaquita de Plata 🥈', req: 5, color: '#c0c0c0', emoji: '🥈' },
+                { name: 'Plaquita de Oro 🥇', req: 10, color: '#ffd700', emoji: '🥇' },
+                { name: 'Plaquita de Platino 💿', req: 25, color: '#e5e4e2', emoji: '💿' },
+                { name: 'Plaquita de Diamante 💎', req: 50, color: '#00e1ff', emoji: '💎' }
+            ];
+            
+            const statsBadgesListEl = document.getElementById('statsBadgesList');
+            statsBadgesListEl.innerHTML = badgesList.map(b => {
+                const isUnlocked = totalWins >= b.req;
+                const opacity = isUnlocked ? '1.0' : '0.4';
+                const statusText = isUnlocked 
+                    ? `<span style="font-size:0.65rem; color:var(--color-green); float:right; font-weight:bold;">¡Desbloqueado!</span>` 
+                    : `<span style="font-size:0.65rem; color:var(--text-muted); float:right;">Requiere ${b.req} ${b.req === 1 ? 'victoria' : 'victorias'}</span>`;
+                const borderStyle = isUnlocked ? `border: 1px solid ${b.color}; background: rgba(255,255,255,0.03);` : 'border: 1px solid rgba(255,255,255,0.05);';
+                
+                return `
+                    <div style="display:flex; align-items:center; gap:10px; padding:6px 10px; border-radius:8px; opacity: ${opacity}; ${borderStyle}">
+                        <span style="font-size:1.5rem;">${b.emoji}</span>
+                        <div style="flex:1; display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:bold; color:${isUnlocked ? b.color : 'white'};">${b.name}</span>
+                            ${statusText}
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             // Load and display achievements
             const achievements = await dbInstance.getAchievements();
