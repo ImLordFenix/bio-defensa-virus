@@ -140,7 +140,7 @@ class VirusGame {
             // If it is Organ Mutante (orange), it needs an organ to replace, or you play it to replace one.
             if (card.color === 'orange') {
                 if (player.board.length === 0) {
-                    return { valid: false, reason: "El Órgano Mutante requiere descartar un órgano existente tuyo." };
+                    return { valid: false, reason: "El Organillo Mutante requiere descartar un organillo existente tuyo." };
                 }
                 return { valid: true };
             }
@@ -167,12 +167,11 @@ class VirusGame {
 
             // Bionic check
             if (organ.color === 'bionic') {
-                return { valid: false, reason: "El Brazo Biónico es inmune a los virus." };
+                return { valid: false, reason: "El Brazito Biónico es inmune a los virus." };
             }
 
-            // Organ Mutante (orange) check
             if (organ.color === 'orange' && card.color !== 'multicolor') {
-                return { valid: false, reason: "El Órgano Mutante solo acepta virus/cartas multicolores." };
+                return { valid: false, reason: "El Organillo Mutante solo acepta virus/cartas multicolores." };
             }
 
             // Color matching
@@ -205,11 +204,11 @@ class VirusGame {
             const organ = slot.organ;
 
             if (organ.color === 'bionic') {
-                return { valid: false, reason: "El Brazo Biónico no acepta medicinas." };
+                return { valid: false, reason: "El Brazito Biónico no acepta medicinas." };
             }
 
             if (organ.color === 'orange' && card.color !== 'multicolor') {
-                return { valid: false, reason: "El Órgano Mutante solo acepta medicinas multicolores." };
+                return { valid: false, reason: "El Organillo Mutante solo acepta medicinas multicolores." };
             }
 
             const colorMatches = card.color === 'multicolor' || organ.color === 'multicolor' || card.color === organ.color;
@@ -425,7 +424,7 @@ class VirusGame {
                 const replacedIdx = extraParams.replacedOrganIndex || 0;
                 const discardedSlot = player.board.splice(replacedIdx, 1)[0];
                 this.discardPile.push(discardedSlot.organ, ...discardedSlot.viruses, ...discardedSlot.medicines);
-                this.log(`${player.name} reemplazó su órgano ${discardedSlot.organ.name} por el Órgano Mutante.`, { icon: '🎃', color: 'orange' });
+                this.log(`${player.name} reemplazó su órgano ${discardedSlot.organ.name} por el Organillo Mutante.`, { icon: '🎃', color: 'orange' });
             }
 
             player.board.push({

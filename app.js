@@ -1307,7 +1307,7 @@ function sendChatMessage() {
                 "Qué buen movimiento...",
                 "¡Oye, no me infectes!",
                 "Esa carta especial me dolió.",
-                "¡A por el Brazo Biónico!"
+                "¡A por el Brazito Biónico!"
             ];
             const botAuthor = game.players[1] ? game.players[1].name : "Bot";
             addChatToUI(botAuthor, responses[Math.floor(Math.random() * responses.length)]);
