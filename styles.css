@@ -264,6 +264,7 @@ body {
     padding: 10px;
     overflow: auto;
     position: relative;
+    z-index: 10;
     background-image: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.85) 100%), 
                       repeating-linear-gradient(90deg, #382012, #382012 80px, #2a180d 80px, #2a180d 160px);
     box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
@@ -789,6 +790,8 @@ body {
     padding: 10px 30px;
     border-top: 1px solid var(--border-glass);
     background: rgba(10, 11, 16, 0.85);
+    position: relative;
+    z-index: 5;
 }
 
 .deck-pile-section {
@@ -852,6 +855,8 @@ body {
     display: flex;
     gap: 12px;
     justify-content: center;
+    position: relative;
+    z-index: 20;
 }
 
 /* Sidebar (Chat & logs) */
