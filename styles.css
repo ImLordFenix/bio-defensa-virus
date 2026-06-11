@@ -324,10 +324,12 @@ body {
 }
 
 .rival-board:hover {
-    transform: scale(1.75);
+    transform: scale(1.6);
+    transform-origin: top center;
     z-index: 50;
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95), 0 0 20px rgba(139, 92, 246, 0.45);
     background: rgba(15, 17, 28, 0.98) !important;
+    overflow: visible;
 }
 
 .rival-board.active-turn {
@@ -541,11 +543,11 @@ body {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .rival-board .organ-slot .card-item .card-name {
-    font-size: 0.4rem;
+    font-size: 0.45rem;
     line-height: 1;
 }
 .rival-board .organ-slot .card-item .card-icon {
-    font-size: 0.9rem;
+    font-size: 1.0rem;
     margin: 1px 0;
 }
 .rival-board .organ-slot .attachments-layer {
