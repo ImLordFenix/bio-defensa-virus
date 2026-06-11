@@ -316,6 +316,8 @@ body {
     overflow: hidden;
     width: 100%;
     height: 100%;
+    min-height: 0;
+    min-width: 0;
     position: relative;
     z-index: 10;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, background-color 0.25s ease, z-index 0.25s ease;
@@ -516,6 +518,90 @@ body {
 }
 .compact-table .organ-slot .card-item .card-name {
     font-size: 0.55rem;
+}
+
+/* Rival board organ slots (default compact view) to prevent grid track stretching */
+.rival-board .organ-slots {
+    gap: 6px;
+    flex-wrap: nowrap;
+    transition: gap 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.rival-board:hover .organ-slots {
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.rival-board .organ-slot {
+    width: 45px;
+    height: 65px;
+    border-radius: 6px;
+    border-width: 1px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.rival-board .organ-slot .card-item {
+    width: 45px;
+    height: 65px;
+    padding: 3px;
+    font-size: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.rival-board .organ-slot .card-item .card-name {
+    font-size: 0.4rem;
+    line-height: 1;
+}
+.rival-board .organ-slot .card-item .card-icon {
+    font-size: 0.9rem;
+    margin: 1px 0;
+}
+.rival-board .organ-slot .attachments-layer {
+    bottom: -4px;
+    gap: 1px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.rival-board .organ-slot .token {
+    width: 12px;
+    height: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.rival-board .organ-slot .token svg {
+    width: 8px;
+    height: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When hovered, expand the rival's cards to full size */
+.rival-board:hover .organ-slot {
+    width: 85px;
+    height: 125px;
+    border-radius: 10px;
+    border-width: 1.5px;
+}
+.rival-board:hover .organ-slot .card-item {
+    width: 85px;
+    height: 125px;
+    padding: 6px;
+    font-size: 0.85rem;
+    border-radius: 10px;
+}
+.rival-board:hover .organ-slot .card-item .card-name {
+    font-size: 0.6rem;
+    line-height: 1.15;
+}
+.rival-board:hover .organ-slot .card-item .card-icon {
+    font-size: 1.6rem;
+    margin: 4px 0;
+}
+.rival-board:hover .organ-slot .attachments-layer {
+    bottom: -6px;
+    gap: 2px;
+}
+.rival-board:hover .organ-slot .token {
+    width: 20px;
+    height: 20px;
+}
+.rival-board:hover .organ-slot .token svg {
+    width: 12px;
+    height: 12px;
 }
 
 /* Premium Card Layout */
