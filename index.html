@@ -176,6 +176,12 @@
                 </div>
             </div>
             <div id="statsBadgeDisplay" style="margin-top: 15px; text-align: center; font-weight: bold;"></div>
+            
+            <h4 style="margin-top:20px;">Logros y Plaquitas</h4>
+            <div id="statsAchievementsList" style="max-height: 180px; overflow-y: auto; margin-top: 10px; font-size:0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                Cargando logros...
+            </div>
+
             <h4 style="margin-top:20px;">Historial de Partidas</h4>
             <div id="matchHistoryList" style="max-height: 180px; overflow-y: auto; margin-top: 10px; font-size:0.8rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
                 Cargando historial...
@@ -398,6 +404,26 @@
             } else {
                 statsBadgeEl.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted);">Sin rango (gana 1 partida para conseguir una plaquita)</span>`;
             }
+
+            // Load and display achievements
+            const achievements = await dbInstance.getAchievements();
+            const achievementsListEl = document.getElementById('statsAchievementsList');
+            achievementsListEl.innerHTML = achievements.map(ach => {
+                const opacity = ach.unlocked ? '1.0' : '0.4';
+                const dateText = ach.unlocked ? ` <span style="font-size:0.65rem; color:var(--text-muted); float:right;">Desbloqueado: ${ach.unlockDate}</span>` : '';
+                return `
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; opacity: ${opacity}; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom:5px;">
+                        <span style="font-size:1.5rem;">${ach.icon}</span>
+                        <div style="flex:1;">
+                            <div style="font-weight:bold;">
+                                <span>${ach.name}</span>
+                                ${dateText}
+                            </div>
+                            <div style="font-size:0.7rem; color:var(--text-secondary);">${ach.desc}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             // Load history
             const history = await dbInstance.getMatchHistory();
