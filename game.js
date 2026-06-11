@@ -16,6 +16,7 @@ class VirusGame {
         this.historyLog = [];
         this.isGameOver = false;
         this.winner = null;
+        this.pendingReaction = false;
 
         // Callback hooks
         this.onStateChange = () => {};
@@ -96,6 +97,9 @@ class VirusGame {
             if (this.isGameOver) {
                 clearInterval(this.turnTimer);
                 return;
+            }
+            if (this.pendingReaction) {
+                return; // Pause timer during reactions
             }
             this.timeLeft--;
             this.onTurnTimerTick(this.timeLeft);
@@ -335,6 +339,10 @@ class VirusGame {
         if (extraParams.originalTargetPlayerIndex !== undefined) {
             targetPlayerIndex = extraParams.originalTargetPlayerIndex;
         }
+        
+        if (extraParams.skipReactionCheck) {
+            this.pendingReaction = false;
+        }
 
         const val = this.validateMove(playerIndex, cardId, targetPlayerIndex, targetOrganIndex, extraParams);
         if (!val.valid) {
@@ -377,6 +385,7 @@ class VirusGame {
                         extraParams.reactionUsed = true;
                         extraParams.shieldCardId = shieldCard.id;
                     } else {
+                        this.pendingReaction = true;
                         if (this.onReactionRequested) {
                             this.onReactionRequested(playerIndex, cardId, reactingPlayer.index, targetOrganIndex, extraParams, shieldCard.id);
                         }
@@ -618,6 +627,11 @@ class VirusGame {
             const tempBoard = [...player.board];
             player.board = [...targetPlayer.board];
             targetPlayer.board = tempBoard;
+            
+            const tempTrick = player.trickOrTreatActive;
+            player.trickOrTreatActive = targetPlayer.trickOrTreatActive;
+            targetPlayer.trickOrTreatActive = tempTrick;
+
             this.log(`¡Error Médico! ${player.name} intercambió su cuerpo completo con ${targetPlayer.name}.`, { icon: '👨‍⚕️' });
         } 
         else if (act === "second_opinion") {
@@ -679,16 +693,19 @@ class VirusGame {
         else if (act === "body_swap") {
             const dir = extraParams.direction || 'clockwise';
             const boards = this.players.map(p => [...p.board]);
+            const tricks = this.players.map(p => p.trickOrTreatActive);
             if (dir === 'clockwise') {
                 for (let i = 0; i < this.numPlayers; i++) {
                     const nextIdx = (i + 1) % this.numPlayers;
                     this.players[nextIdx].board = boards[i];
+                    this.players[nextIdx].trickOrTreatActive = tricks[i];
                 }
                 this.log(`¡Cambio de Cuerpos! Todos pasaron su cuerpo en sentido horario.`, { icon: '🧟' });
             } else {
                 for (let i = 0; i < this.numPlayers; i++) {
                     const prevIdx = (i - 1 + this.numPlayers) % this.numPlayers;
                     this.players[prevIdx].board = boards[i];
+                    this.players[prevIdx].trickOrTreatActive = tricks[i];
                 }
                 this.log(`¡Cambio de Cuerpos! Todos pasaron su cuerpo en sentido antihorario.`, { icon: '🧟' });
             }

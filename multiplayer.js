@@ -37,9 +37,10 @@ class BioDefensaMultiplayer {
         this.roomRef = null;
     }
 
-    init(nickname, avatar) {
+    init(nickname, avatar, gamesWon = 0) {
         this.myNickname = nickname || 'Anónimo';
         this.myAvatar = avatar || '🕵️';
+        this.myGamesWon = gamesWon;
         return Promise.resolve();
     }
 
@@ -51,7 +52,8 @@ class BioDefensaMultiplayer {
             peerId: this.myPeerId,
             nickname: this.myNickname,
             avatar: this.myAvatar,
-            isHost: true
+            isHost: true,
+            gamesWon: this.myGamesWon || 0
         }];
         
         this.roomRef = database.ref('rooms/' + this.roomId);
@@ -91,7 +93,8 @@ class BioDefensaMultiplayer {
                 peerId: this.myPeerId,
                 nickname: this.myNickname,
                 avatar: this.myAvatar,
-                isHost: false
+                isHost: false,
+                gamesWon: this.myGamesWon || 0
             };
             
             this.roomRef.child('players/' + this.myPeerId).set(myPlayerObj);
@@ -196,10 +199,12 @@ class BioDefensaMultiplayer {
         this.roomRef.child('reactions').on('value', snapshot => {
             if (!snapshot.exists()) {
                 if (window.hideWaitingForReaction) window.hideWaitingForReaction();
+                this.game.pendingReaction = false;
                 return;
             }
             const req = snapshot.val();
             if (req) {
+                this.game.pendingReaction = true;
                 if (req.targetPeerId === this.myPeerId) {
                     if (window.showReactionModal) {
                         window.showReactionModal(req.data.attackerIdx, req.data.cardId, req.data.targetIdx, req.data.targetOrganIdx, req.data.extraParams, req.data.shieldCardId);
@@ -252,6 +257,7 @@ class BioDefensaMultiplayer {
         this.game.players.forEach((p, i) => {
             p.isBot = false;
             p.peerId = this.playersList[i] ? this.playersList[i].peerId : null;
+            p.gamesWon = this.playersList[i] ? (this.playersList[i].gamesWon || 0) : 0;
         });
 
         // Register reaction requested handler for host to push to Firebase
@@ -337,7 +343,8 @@ class BioDefensaMultiplayer {
                         shieldActive: !!p.shieldActive,
                         quarantined: !!p.quarantined,
                         gloveActive: !!p.gloveActive,
-                        trickOrTreatActive: !!p.trickOrTreatActive
+                        trickOrTreatActive: !!p.trickOrTreatActive,
+                        gamesWon: p.gamesWon || 0
                     };
                 })
             };
@@ -389,6 +396,7 @@ class BioDefensaMultiplayer {
             index: p.index,
             peerId: p.peerId,
             isBot: false,
+            gamesWon: p.gamesWon || 0,
             hand: (p.hand || []).map(c => ({
                 id: c.id,
                 type: c.type || 'unknown',

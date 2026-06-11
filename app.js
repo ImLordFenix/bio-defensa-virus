@@ -214,16 +214,16 @@ window.addEventListener('load', async () => {
         renderGameBoard();
     } 
     else if (modeParam === 'create') {
-        initMultiplayer(profile.nickname, profile.avatar, true);
+        initMultiplayer(profile.nickname, profile.avatar, true, null, stats.gamesWon);
     } 
     else if (modeParam === 'join') {
         const code = params.get('code');
-        initMultiplayer(profile.nickname, profile.avatar, false, code);
+        initMultiplayer(profile.nickname, profile.avatar, false, code, stats.gamesWon);
     }
 });
 
 // --- Multiplayer Connection Setup ---
-function initMultiplayer(nickname, avatar, isHost, code = null) {
+function initMultiplayer(nickname, avatar, isHost, code = null, gamesWon = 0) {
     multiplayer = new BioDefensaMultiplayer(game);
     document.getElementById('lobbyControls').style.display = 'block';
 
@@ -301,7 +301,7 @@ function initMultiplayer(nickname, avatar, isHost, code = null) {
         }, 3000);
     };
 
-    multiplayer.init(nickname, avatar).then(() => {
+    multiplayer.init(nickname, avatar, gamesWon).then(() => {
         if (isHost) {
             multiplayer.createRoom();
         } else {
@@ -933,6 +933,7 @@ function getSeatLayout(numPlayers) {
             gridCols: "1fr 280px 1fr",
             gridRows: "auto 1fr auto",
             centerStyle: "grid-row: 2; grid-column: 2;",
+            maxCols: 3,
             seats: [
                 { r: 3, c: 1, span: 3 }, // Player 0 (Bottom)
                 { r: 1, c: 1, span: 3 }  // Player 1 (Top)
@@ -943,6 +944,7 @@ function getSeatLayout(numPlayers) {
             gridCols: "1fr 1fr",
             gridRows: "auto 1fr auto",
             centerStyle: "grid-row: 2; grid-column: 1 / span 2;",
+            maxCols: 2,
             seats: [
                 { r: 3, c: 1, span: 2 }, // Player 0 (Bottom)
                 { r: 1, c: 1, span: 1 }, // Player 1 (Top Left)
@@ -954,6 +956,7 @@ function getSeatLayout(numPlayers) {
             gridCols: "1fr 300px 1fr",
             gridRows: "auto 1fr auto",
             centerStyle: "grid-row: 2; grid-column: 2;",
+            maxCols: 3,
             seats: [
                 { r: 3, c: 1, span: 3 }, // Player 0 (Bottom)
                 { r: 2, c: 1, span: 1 }, // Player 1 (Left)
@@ -966,6 +969,7 @@ function getSeatLayout(numPlayers) {
             gridCols: "1fr 1fr 1fr 1fr",
             gridRows: "auto 1fr auto",
             centerStyle: "grid-row: 2; grid-column: 2 / span 2;",
+            maxCols: 4,
             seats: [
                 { r: 3, c: 2, span: 2 }, // Player 0 (Bottom Center)
                 { r: 3, c: 1, span: 1 }, // Player 1 (Bottom Left)
@@ -979,6 +983,7 @@ function getSeatLayout(numPlayers) {
             gridCols: "1fr 1fr 1fr 1fr",
             gridRows: "auto 1fr auto",
             centerStyle: "grid-row: 2; grid-column: 2 / span 2;",
+            maxCols: 4,
             seats: [
                 { r: 3, c: 2, span: 2 }, // Player 0 (Bottom Center)
                 { r: 3, c: 1, span: 1 }, // Player 1 (Bottom Left)
@@ -993,6 +998,7 @@ function getSeatLayout(numPlayers) {
             gridCols: "1fr 1fr 1fr 1fr",
             gridRows: "auto 1fr auto",
             centerStyle: "grid-row: 2; grid-column: 2 / span 2;",
+            maxCols: 4,
             seats: [
                 { r: 3, c: 2, span: 2 }, // Player 0 (Bottom Center)
                 { r: 3, c: 1, span: 1 }, // Player 1 (Bottom Left)
@@ -1008,6 +1014,7 @@ function getSeatLayout(numPlayers) {
             gridCols: "1fr 1fr 1fr 1fr",
             gridRows: "auto 1fr 1fr auto",
             centerStyle: "grid-row: 2 / span 2; grid-column: 2 / span 2;",
+            maxCols: 4,
             seats: [
                 { r: 4, c: 2, span: 2 }, // Player 0 (Bottom Center)
                 { r: 4, c: 1, span: 1 }, // Player 1 (Bottom Left)
@@ -1025,6 +1032,7 @@ function getSeatLayout(numPlayers) {
             gridCols: "repeat(4, 1fr)",
             gridRows: "auto 1fr 1fr auto",
             centerStyle: "grid-row: 2 / span 2; grid-column: 2 / span 2;",
+            maxCols: 4,
             seats: [
                 { r: 4, c: 2, span: 2 }, // Seat 0
                 { r: 4, c: 1, span: 1 }, // Seat 1
@@ -1205,9 +1213,32 @@ function renderGameBoard() {
                 `;
             }).join('');
 
+            const rivalBadge = p.gamesWon ? dbInstance.getVictoryBadge(p.gamesWon) : null;
+            const rivalBadgeHTML = rivalBadge ? `<span style="color:${rivalBadge.color}; font-size:0.7rem; margin-left:5px; border:1px solid ${rivalBadge.color}; padding:0px 4px; border-radius:4px; font-weight:800; text-transform:none;">${rivalBadge.short}</span>` : '';
+
+            let verticalOrigin = 'top';
+            if (pos.r >= 3) {
+                verticalOrigin = 'bottom';
+            } else if (pos.r === 1) {
+                verticalOrigin = 'top';
+            } else {
+                verticalOrigin = 'center';
+            }
+
+            let horizontalOrigin = 'center';
+            if (pos.c === 1) {
+                horizontalOrigin = 'left';
+            } else if (pos.c + (pos.span || 1) - 1 >= (layout.maxCols || 4)) {
+                horizontalOrigin = 'right';
+            }
+            if (pos.span === layout.maxCols) {
+                horizontalOrigin = 'center';
+            }
+            const originStyle = `transform-origin: ${verticalOrigin} ${horizontalOrigin};`;
+
             gridHTML += `
-                <div class="rival-board glass-panel ${isTurn ? 'active-turn' : ''}" style="${gridStyle}" ondragover="allowDrag(event)" ondrop="handleOrganDrop(event, ${p.index}, null)">
-                    <div class="rival-name">${p.name} ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
+                <div class="rival-board glass-panel ${isTurn ? 'active-turn' : ''}" style="${gridStyle} ${originStyle}" ondragover="allowDrag(event)" ondrop="handleOrganDrop(event, ${p.index}, null)">
+                    <div class="rival-name">${p.name}${rivalBadgeHTML} ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
                     <div class="rival-hand-indicator">Cartas: ${p.hand.length}</div>
                     <div class="organ-slots">
                         ${organIcons.length > 0 ? organIcons : '<span style="font-size:0.6rem; color:var(--text-muted)">Vacío</span>'}
