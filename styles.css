@@ -323,11 +323,10 @@ body {
 }
 
 .rival-board:hover {
-    transform: scale(1.1);
+    transform: scale(1.75);
     z-index: 50;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(139, 92, 246, 0.35);
-    background: rgba(15, 17, 28, 0.95) !important;
-    overflow: visible;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95), 0 0 20px rgba(139, 92, 246, 0.45);
+    background: rgba(15, 17, 28, 0.98) !important;
 }
 
 .rival-board.active-turn {
@@ -525,10 +524,6 @@ body {
     flex-wrap: nowrap;
     transition: gap 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.rival-board:hover .organ-slots {
-    gap: 12px;
-    flex-wrap: wrap;
-}
 .rival-board .organ-slot {
     width: 45px;
     height: 65px;
@@ -566,41 +561,6 @@ body {
     width: 8px;
     height: 8px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* When hovered, expand the rival's cards to full size */
-.rival-board:hover .organ-slot {
-    width: 85px;
-    height: 125px;
-    border-radius: 10px;
-    border-width: 1.5px;
-}
-.rival-board:hover .organ-slot .card-item {
-    width: 85px;
-    height: 125px;
-    padding: 6px;
-    font-size: 0.85rem;
-    border-radius: 10px;
-}
-.rival-board:hover .organ-slot .card-item .card-name {
-    font-size: 0.6rem;
-    line-height: 1.15;
-}
-.rival-board:hover .organ-slot .card-item .card-icon {
-    font-size: 1.6rem;
-    margin: 4px 0;
-}
-.rival-board:hover .organ-slot .attachments-layer {
-    bottom: -6px;
-    gap: 2px;
-}
-.rival-board:hover .organ-slot .token {
-    width: 20px;
-    height: 20px;
-}
-.rival-board:hover .organ-slot .token svg {
-    width: 12px;
-    height: 12px;
 }
 
 /* Premium Card Layout */
