@@ -262,7 +262,7 @@ body {
     flex-direction: column;
     justify-content: space-between;
     padding: 10px;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
     background-image: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.85) 100%), 
                       repeating-linear-gradient(90deg, #382012, #382012 80px, #2a180d 80px, #2a180d 160px);
@@ -1185,3 +1185,47 @@ body {
     }
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Responsive adjustments for shorter screen heights (no F11 fullscreen) */
+@media (max-height: 820px) {
+    .table-grid {
+        gap: 8px;
+        padding: 8px;
+    }
+    .rival-board {
+        height: 95px;
+    }
+    .board-organ-container,
+    .board-organ-container .card-item {
+        width: 68px;
+        height: 100px;
+    }
+    .board-organ-container .card-item .card-icon {
+        font-size: 1.3rem;
+        margin: 2px 0;
+    }
+    .board-organ-container .card-item .card-name {
+        font-size: 0.5rem;
+    }
+    .hand-panel {
+        padding: 5px 15px;
+    }
+    .deck-card, .discard-card {
+        width: 50px;
+        height: 70px;
+    }
+    .player-hand .card-item {
+        width: 85px;
+        height: 125px;
+        font-size: 0.75rem;
+        padding: 5px;
+    }
+    .player-hand .card-item .card-icon {
+        font-size: 1.5rem;
+        margin: 3px 0;
+    }
+    .player-hand .card-item .card-desc {
+        font-size: 0.45rem;
+        line-height: 1.1;
+    }
+}
