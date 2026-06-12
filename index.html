@@ -319,6 +319,7 @@
             }
 
             // Wait for DB, then load profile
+            await dbInstance.init();
             const profile = await dbInstance.getProfile();
             document.getElementById('nicknameInput').value = profile.nickname;
             document.getElementById('avatarDisplay').textContent = profile.avatar;

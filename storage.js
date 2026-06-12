@@ -4,20 +4,26 @@ class BioDefensaStorage {
         this.dbName = 'BioDefensaDB';
         this.dbVersion = 1;
         this.db = null;
+        this.initPromise = null;
     }
 
     init() {
-        return new Promise((resolve, reject) => {
+        if (this.initPromise) return this.initPromise;
+        this.initPromise = new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
             request.onerror = (event) => {
                 console.error("IndexedDB error:", event.target.error);
-                // Fallback to memory/localStorage if IndexedDB fails
                 resolve(false);
             };
 
-            request.onsuccess = (event) => {
+            request.onsuccess = async (event) => {
                 this.db = event.target.result;
+                try {
+                    await this.migrateFromLocalStorage();
+                } catch (e) {
+                    console.error("Migration error:", e);
+                }
                 resolve(true);
             };
 
@@ -45,10 +51,115 @@ class BioDefensaStorage {
                 }
             };
         });
+        return this.initPromise;
+    }
+
+    async migrateFromLocalStorage() {
+        if (!this.db) return;
+
+        // 1. Profile migration
+        const localProfile = localStorage.getItem('bd_profile');
+        if (localProfile) {
+            try {
+                const dbProfile = await new Promise((resolve, reject) => {
+                    const tx = this.db.transaction('profile', 'readonly');
+                    const store = tx.objectStore('profile');
+                    const req = store.get('user');
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = (e) => reject(e.target.error);
+                });
+                if (!dbProfile) {
+                    await new Promise((resolve, reject) => {
+                        const tx = this.db.transaction('profile', 'readwrite');
+                        const store = tx.objectStore('profile');
+                        const req = store.put(JSON.parse(localProfile));
+                        req.onsuccess = () => resolve(true);
+                        req.onerror = (e) => reject(e.target.error);
+                    });
+                }
+            } catch (e) {
+                console.error("Profile migration failed:", e);
+            }
+        }
+
+        // 2. Stats migration
+        const localStats = localStorage.getItem('bd_stats');
+        if (localStats) {
+            try {
+                const dbStats = await new Promise((resolve, reject) => {
+                    const tx = this.db.transaction('stats', 'readonly');
+                    const store = tx.objectStore('stats');
+                    const req = store.get('stats_summary');
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = (e) => reject(e.target.error);
+                });
+                if (!dbStats) {
+                    await new Promise((resolve, reject) => {
+                        const tx = this.db.transaction('stats', 'readwrite');
+                        const store = tx.objectStore('stats');
+                        const req = store.put(JSON.parse(localStats));
+                        req.onsuccess = () => resolve(true);
+                        req.onerror = (e) => reject(e.target.error);
+                    });
+                }
+            } catch (e) {
+                console.error("Stats migration failed:", e);
+            }
+        }
+
+        // 3. History migration
+        const localHistory = localStorage.getItem('bd_history');
+        if (localHistory) {
+            try {
+                const dbHistoryCount = await new Promise((resolve, reject) => {
+                    const tx = this.db.transaction('history', 'readonly');
+                    const store = tx.objectStore('history');
+                    const req = store.count();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = (e) => reject(e.target.error);
+                });
+                if (dbHistoryCount === 0) {
+                    const parsedHistory = JSON.parse(localHistory);
+                    const tx = this.db.transaction('history', 'readwrite');
+                    const store = tx.objectStore('history');
+                    for (const match of parsedHistory) {
+                        store.add(match);
+                    }
+                }
+            } catch (e) {
+                console.error("History migration failed:", e);
+            }
+        }
+
+        // 4. Achievements migration
+        const localAchievements = localStorage.getItem('bd_achievements');
+        if (localAchievements) {
+            try {
+                const hasDbAchs = await new Promise((resolve) => {
+                    const tx = this.db.transaction('achievements', 'readonly');
+                    const store = tx.objectStore('achievements');
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result && req.result.length > 0);
+                    req.onerror = () => resolve(false);
+                });
+                
+                if (!hasDbAchs) {
+                    const parsedAchs = JSON.parse(localAchievements);
+                    const tx = this.db.transaction('achievements', 'readwrite');
+                    const store = tx.objectStore('achievements');
+                    for (const ach of parsedAchs) {
+                        store.put(ach);
+                    }
+                }
+            } catch (e) {
+                console.error("Achievements migration failed:", e);
+            }
+        }
     }
 
     // --- Profile & Settings Helpers ---
     async getProfile() {
+        await this.init();
         const defaultProfile = {
             key: 'user',
             nickname: 'Científico_' + Math.floor(Math.random() * 9000 + 1000),
@@ -77,6 +188,7 @@ class BioDefensaStorage {
     }
 
     async saveProfile(profile) {
+        await this.init();
         if (!this.db) {
             localStorage.setItem('bd_profile', JSON.stringify(profile));
             return;
@@ -86,6 +198,7 @@ class BioDefensaStorage {
 
     // --- Statistics Helpers ---
     async getStats() {
+        await this.init();
         const defaultStats = {
             key: 'stats_summary',
             gamesPlayed: 0,
@@ -116,6 +229,7 @@ class BioDefensaStorage {
     }
 
     async updateStats(won, durationSeconds, cardsUsedList = []) {
+        await this.init();
         const stats = await this.getStats();
         stats.gamesPlayed++;
         if (won) {
@@ -146,6 +260,7 @@ class BioDefensaStorage {
 
     // --- Match History Helpers ---
     async addMatchToHistory(match) {
+        await this.init();
         // match: { date: string, playersCount: number, result: 'victory'|'defeat', duration: number, mode: string }
         if (!this.db) {
             const local = localStorage.getItem('bd_history');
@@ -164,6 +279,7 @@ class BioDefensaStorage {
     }
 
     async getMatchHistory() {
+        await this.init();
         if (!this.db) {
             const local = localStorage.getItem('bd_history');
             return local ? JSON.parse(local) : [];
@@ -185,6 +301,7 @@ class BioDefensaStorage {
 
     // --- Achievement Helpers ---
     async getAchievements() {
+        await this.init();
         const defaultAchievements = [
             { id: 'first_win', name: 'Primera Victoria', desc: 'Gana tu primera partida contra bots o jugadores.', unlocked: false, icon: '🏆' },
             { id: 'ten_wins', name: 'Médico Residente', desc: 'Gana 10 partidas.', unlocked: false, icon: '🩺' },
@@ -222,6 +339,7 @@ class BioDefensaStorage {
     }
 
     async checkAchievements(stats) {
+        await this.init();
         const achievements = await this.getAchievements();
         let changed = false;
 
