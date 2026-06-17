@@ -861,6 +861,18 @@ body {
     z-index: 20;
 }
 
+.player-hand .card-item {
+    transform-origin: bottom center;
+}
+
+.player-hand .card-item:first-child:hover {
+    transform-origin: bottom left;
+}
+
+.player-hand .card-item:last-child:hover {
+    transform-origin: bottom right;
+}
+
 /* Sidebar (Chat & logs) */
 .sidebar-panel {
     grid-column: 2;

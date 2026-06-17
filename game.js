@@ -352,7 +352,14 @@ class VirusGame {
 
         const player = this.players[playerIndex];
         const cardIndex = player.hand.findIndex(c => c.id === cardId);
-        const card = player.hand[cardIndex];
+        const card = cardIndex !== -1 ? player.hand[cardIndex] : null;
+        
+        if (!card) {
+            console.error("playCard: Carta no encontrada! cardId:", cardId);
+            this.pendingReaction = false;
+            return { valid: false, reason: "Error interno: Carta no encontrada." };
+        }
+        
         const targetPlayer = this.players[targetPlayerIndex];
 
         // --- REACTION SYSTEM: Traje de Protección ---
@@ -662,6 +669,14 @@ class VirusGame {
             const slot = targetPlayer.board[targetOrganIndex];
             const choice = extraParams.experimentChoice; 
             if (choice === 'medicine') {
+                // If Truco o Trato active and we cure an opponent's organ
+                if (player.trickOrTreatActive && targetPlayerIndex !== playerIndex) {
+                    player.trickOrTreatActive = false;
+                    targetPlayer.trickOrTreatActive = true;
+                    this.log(`¡${player.name} se liberó de Truco o Trato curando a ${targetPlayer.name} con un Experimento Fallido!`, { icon: '🎃', color: 'orange' });
+                }
+
+
                 if (slot.viruses.length > 0) {
                     const disc = slot.viruses.pop();
                     this.discardPile.push(disc);
