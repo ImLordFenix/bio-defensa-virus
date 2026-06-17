@@ -382,7 +382,7 @@ const CARD_TEMPLATES = {
             desc: "Bloquea un virus o tratamiento dirigido a ti y lo redirige.", 
             rarity: "épico", 
                         isEvolution: true, 
-            qty: 2
+            qty: 0
         },
         { 
             name: "Cuarentena", 
