@@ -375,7 +375,7 @@ const CARD_TEMPLATES = {
         },
         { 
             name: "Traje de Protección", 
-            color: "none", 
+            color: "non+e", 
             type: "special", 
             action: "shield", 
             icon: `<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 11 2 2 4-4"/></svg>`, 
@@ -523,24 +523,28 @@ function generateDeck(numPlayers, includeEvolution = true, includeHalloween = tr
 
     // Load templates based on quantities
     CARD_TEMPLATES.organs.forEach(org => {
+        if (!org.qty || org.qty <= 0) return;
         if (org.isEvolution && !includeEvolution) return;
         if (org.isHalloween && !includeHalloween) return;
         addCopies(org, org.qty);
     });
 
     CARD_TEMPLATES.virus.forEach(vir => {
+        if (!vir.qty || vir.qty <= 0) return;
         if (vir.isEvolution && !includeEvolution) return;
         if (vir.isHalloween && !includeHalloween) return;
         addCopies(vir, vir.qty);
     });
 
     CARD_TEMPLATES.medicines.forEach(med => {
+        if (!med.qty || med.qty <= 0) return;
         if (med.isEvolution && !includeEvolution) return;
         if (med.isHalloween && !includeHalloween) return;
         addCopies(med, med.qty);
     });
 
     CARD_TEMPLATES.special.forEach(sp => {
+        if (!sp.qty || sp.qty <= 0) return;
         if (sp.isEvolution && !includeEvolution) return;
         if (sp.isHalloween && !includeHalloween) return;
         addCopies(sp, sp.qty);
