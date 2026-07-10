@@ -46,10 +46,11 @@ class BioDefensaAI {
         }
 
         if (bot.hand.length > 0) {
-            const cardToDiscard = bot.hand[Math.floor(Math.random() * bot.hand.length)];
-            return { type: 'discard', cardIds: [cardToDiscard.id] };
+            // Discard 1 to 3 cards to cycle hand faster
+            const numToDiscard = Math.floor(Math.random() * Math.min(3, bot.hand.length)) + 1;
+            const cardsToDiscard = [...bot.hand].sort(() => 0.5 - Math.random()).slice(0, numToDiscard);
+            return { type: 'discard', cardIds: cardsToDiscard.map(c => c.id) };
         }
-
         return { type: 'discard', cardIds: [] };
     }
 
@@ -121,7 +122,10 @@ class BioDefensaAI {
 
         // 6. Default discard
         if (hand.length > 0) {
-            return { type: 'discard', cardIds: [hand[0].id] };
+            // Discard up to 3 useless cards
+            const numToDiscard = Math.floor(Math.random() * Math.min(3, hand.length)) + 1;
+            const cardsToDiscard = [...hand].sort(() => 0.5 - Math.random()).slice(0, numToDiscard);
+            return { type: 'discard', cardIds: cardsToDiscard.map(c => c.id) };
         }
         return { type: 'discard', cardIds: [] };
     }

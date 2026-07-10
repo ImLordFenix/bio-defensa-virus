@@ -397,6 +397,12 @@ function triggerBotOrTurnAction() {
             isBotMoving = false;
 
             if (decision.type === 'play') {
+                const card = activePlayer.hand.find(c => c.id === decision.cardId);
+                if (card) {
+                    playCardSound(card);
+                    spawnParticles(null, card.type, decision.targetPlayerIndex);
+                }
+                
                 game.playCard(
                     game.activePlayerIndex,
                     decision.cardId,
@@ -405,6 +411,10 @@ function triggerBotOrTurnAction() {
                     decision.extraParams
                 );
             } else if (decision.type === 'discard') {
+                playSound('play_card');
+                spawnParticles(null, 'organ', game.activePlayerIndex);
+                showCustomAlert(`🤖 ${activePlayer.name} descartó ${decision.cardIds.length} carta(s).`, 'info');
+                
                 game.discardCards(game.activePlayerIndex, decision.cardIds);
             }
         }, 400);
@@ -419,9 +429,27 @@ function playCardSound(card) {
     else playSound('play_card');
 }
 
-function spawnParticles(ev, type) {
-    const x = ev.clientX;
-    const y = ev.clientY;
+function spawnParticles(ev, type, targetPlayerIndex = null) {
+    let x = window.innerWidth / 2;
+    let y = window.innerHeight / 2;
+
+    if (ev && ev.clientX !== undefined) {
+        x = ev.clientX;
+        y = ev.clientY;
+    } else if (targetPlayerIndex !== null && game && game.players[targetPlayerIndex]) {
+        const isMe = targetPlayerIndex === myPlayerIndex;
+        const player = game.players[targetPlayerIndex];
+        const panel = Array.from(document.querySelectorAll(isMe ? '.player-board-panel' : '.rival-board')).find(p => {
+            const n = p.querySelector('.rival-name');
+            if (!n) return false;
+            return isMe ? n.textContent.includes('TÚ') : n.textContent.includes(player.name);
+        });
+        if (panel) {
+            const rect = panel.getBoundingClientRect();
+            x = rect.left + rect.width / 2;
+            y = rect.top + rect.height / 2;
+        }
+    }
     
     for (let i = 0; i < 12; i++) {
         const particle = document.createElement('div');
@@ -907,26 +935,22 @@ window.confirmAlienTransplant = (cardId, p1Idx, org1Idx, p2Idx, org2Idx) => {
 window.currentPendingReaction = null;
 
 window.showReactionModal = (attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId) => {
-    const modal = document.getElementById('choiceModal');
-    const title = document.getElementById('choiceModalTitle');
-    const opts = document.getElementById('choiceModalOptions');
+    const modal = document.getElementById('reactionModal');
+    const textEl = document.getElementById('reactionModalText');
     
     const attackerName = game.players[attackerIdx].name;
     
     // Store in global window variable to avoid any quote escaping issues in HTML attributes
     window.currentPendingReaction = { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId };
     
-    setModalIcon('🛡️');
-    title.textContent = `¡${attackerName} te está atacando! Tienes un Traje de Protección. ¿Deseas usarlo para bloquear el ataque?`;
-    opts.innerHTML = `
-        <button class="btn btn-primary" onclick="confirmReaction(true)">🛡️ Usar Traje (Bloquear)</button>
-        <button class="btn btn-danger" onclick="confirmReaction(false)">Recibir Ataque</button>
-    `;
+    playSound('infect'); // Play an alert sound
+    textEl.innerHTML = `¡El jugador <strong style="color:var(--color-halloween);">${attackerName}</strong> te ha lanzado un ataque!<br>Pero tienes un <strong style="color:var(--color-green);">Traje de Protección</strong> en tu mano. ¿Qué deseas hacer?`;
+    
     modal.style.display = 'flex';
 };
 
 window.confirmReaction = (accept) => {
-    document.getElementById('choiceModal').style.display = 'none';
+    document.getElementById('reactionModal').style.display = 'none';
     if (!window.currentPendingReaction) return;
     
     const { attackerIdx, cardId, targetIdx, targetOrganIdx, extraParams, shieldCardId } = window.currentPendingReaction;
