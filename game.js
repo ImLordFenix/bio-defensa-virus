@@ -45,6 +45,7 @@ class VirusGame {
         this.historyLog = [];
         this.discardPile = [];
         this.quarantineZone = [];
+        this.statsTrack = { virusDestroyed: 0, organsInfected: 0, medicinesApplied: 0 };
 
         this.handSize = 3;
         this.deck = generateDeck(this.numPlayers, this.includeEvolution, this.includeHalloween);
@@ -461,6 +462,7 @@ class VirusGame {
                 this.onSoundTrigger('cure');
             } else {
                 slot.viruses.push(card);
+                if (player.index === this.activePlayerIndex) this.statsTrack.organsInfected++;
                 this.log(`${player.name} infectó el órgano ${slot.organ.name} de ${targetPlayer.name} con ${card.name}.`, { icon: card.icon, color: card.color });
                 
                 if (slot.viruses.length >= 2) {
@@ -486,15 +488,18 @@ class VirusGame {
             if (slot.viruses.length > 0) {
                 const discVirus = slot.viruses.pop();
                 this.discardPile.push(discVirus, card);
+                if (player.index === this.activePlayerIndex) this.statsTrack.virusDestroyed++;
                 this.log(`${player.name} curó el virus ${discVirus.name} de ${targetPlayer.name} usando ${card.name}.`, { icon: card.icon, color: card.color });
                 this.onSoundTrigger('cure');
             } else {
                 if (card.isExperimental && slot.medicines.length === 0) {
                     slot.medicines.push(card);
                     slot.medicines.push({ ...card }); // Clone to avoid reference issues
+                    if (player.index === this.activePlayerIndex) this.statsTrack.medicinesApplied += 2;
                     this.log(`${player.name} inmunizó automáticamente el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
                 } else {
                     slot.medicines.push(card);
+                    if (player.index === this.activePlayerIndex) this.statsTrack.medicinesApplied++;
                     if (slot.medicines.length >= 2) {
                         this.log(`${player.name} inmunizó el órgano ${slot.organ.name} con ${card.name}.`, { icon: card.icon, color: card.color });
                     } else {

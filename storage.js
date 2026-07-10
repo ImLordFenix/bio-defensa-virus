@@ -167,7 +167,11 @@ class BioDefensaStorage {
             volumeSound: 0.5,
             volumeMusic: 0.3,
             animationsEnabled: true,
-            selectedTheme: 'dark'
+            selectedTheme: 'dark',
+            dnaCoins: 0,
+            unlockedAvatars: [],
+            unlockedCardBacks: [],
+            selectedCardBack: 'default'
         };
 
         if (!this.db) {
@@ -208,7 +212,10 @@ class BioDefensaStorage {
             winStreak: 0,
             maxWinStreak: 0,
             cardsPlayed: {},
-            organsCompleted: 0
+            organsCompleted: 0,
+            virusDestroyed: 0,
+            organsInfected: 0,
+            medicinesApplied: 0
         };
 
         if (!this.db) {
@@ -228,7 +235,7 @@ class BioDefensaStorage {
         }
     }
 
-    async updateStats(won, durationSeconds, cardsUsedList = []) {
+    async updateStats(won, durationSeconds, cardsUsedList = [], matchDetails = {}) {
         await this.init();
         const stats = await this.getStats();
         stats.gamesPlayed++;
@@ -247,6 +254,10 @@ class BioDefensaStorage {
         cardsUsedList.forEach(cardType => {
             stats.cardsPlayed[cardType] = (stats.cardsPlayed[cardType] || 0) + 1;
         });
+        
+        if (matchDetails.virusDestroyed) stats.virusDestroyed = (stats.virusDestroyed || 0) + matchDetails.virusDestroyed;
+        if (matchDetails.organsInfected) stats.organsInfected = (stats.organsInfected || 0) + matchDetails.organsInfected;
+        if (matchDetails.medicinesApplied) stats.medicinesApplied = (stats.medicinesApplied || 0) + matchDetails.medicinesApplied;
 
         if (!this.db) {
             localStorage.setItem('bd_stats', JSON.stringify(stats));
@@ -254,8 +265,27 @@ class BioDefensaStorage {
             await this.set('stats', stats);
         }
 
+        // Calculate DNA Coins based on performance
+        let coinsEarned = 10; // base for playing
+        if (won) coinsEarned += 25;
+        if (matchDetails.virusDestroyed) coinsEarned += matchDetails.virusDestroyed * 2;
+        if (matchDetails.organsInfected) coinsEarned += matchDetails.organsInfected * 2;
+        if (matchDetails.medicinesApplied) coinsEarned += matchDetails.medicinesApplied * 1;
+        
+        await this.awardDnaCoins(coinsEarned);
+
         // Check achievements after updating stats
         await this.checkAchievements(stats);
+        
+        return coinsEarned;
+    }
+
+    async awardDnaCoins(amount) {
+        await this.init();
+        const profile = await this.getProfile();
+        profile.dnaCoins = (profile.dnaCoins || 0) + amount;
+        await this.saveProfile(profile);
+        return profile.dnaCoins;
     }
 
     // --- Match History Helpers ---

@@ -122,6 +122,7 @@ function addChatToUI(author, message) {
 window.addEventListener('load', async () => {
     await dbInstance.init();
     const profile = await dbInstance.getProfile();
+    window.currentProfile = profile;
     const stats = await dbInstance.getStats();
     playerBadge = dbInstance.getVictoryBadge(stats.gamesWon);
 
@@ -167,22 +168,27 @@ window.addEventListener('load', async () => {
     game.onGameOver = async (winner) => {
         isBotMoving = false;
         renderGameBoard();
-        showGameOverModal(winner);
 
         const duration = 150; 
         const isWin = winner.index === myPlayerIndex;
-        await dbInstance.updateStats(isWin, duration, []);
+        
+        // Pass statsTrack to updateStats and get coins earned
+        const coinsEarned = await dbInstance.updateStats(isWin, duration, [], game.statsTrack || {});
+        
         await dbInstance.addMatchToHistory({
             date: new Date().toLocaleDateString(),
             playersCount: game.numPlayers,
             result: isWin ? 'victoria' : 'derrota',
             duration: duration,
-            mode: game.mode
+            mode: game.mode,
+            coinsEarned: coinsEarned
         });
 
         // Update badge dynamically in case threshold was crossed
         const stats = await dbInstance.getStats();
         playerBadge = dbInstance.getVictoryBadge(stats.gamesWon);
+        
+        showGameOverModal(winner, coinsEarned);
     };
 
     // Register user interactions to bypass audio autoplay blocks
@@ -647,7 +653,7 @@ function executePlay(cardId, targetPlayerIndex, targetOrganIndex, extraParams = 
     }
 }
 
-window.showGameOverModal = function(winner) {
+window.showGameOverModal = function(winner, coinsEarned = 0) {
     const oldOverlay = document.getElementById('gameOverOverlay');
     if (oldOverlay) oldOverlay.remove();
 
@@ -673,8 +679,11 @@ window.showGameOverModal = function(winner) {
             <div style="font-weight: 800; font-size: 1.8rem; margin-bottom: 5px; color: var(--primary);">
                 ¡PARTIDA TERMINADA!
             </div>
-            <div style="font-size: 1.2rem; margin-bottom: 25px; color: var(--text-primary);">
+            <div style="font-size: 1.2rem; margin-bottom: 15px; color: var(--text-primary);">
                 El ganador es: <strong style="color: var(--color-green);">${winner.name}</strong>
+            </div>
+            <div style="font-size: 1.1rem; margin-bottom: 25px; padding: 10px; background: rgba(0, 255, 150, 0.1); border: 1px solid var(--color-green); border-radius: 8px;">
+                🧬 <strong>+${coinsEarned} ADN</strong> obtenido
             </div>
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <button class="btn btn-secondary" onclick="exitToLobby()" style="padding: 10px 20px;">
@@ -1147,12 +1156,20 @@ function renderGameBoard() {
         grid.classList.remove('compact-table');
     }
 
+    const backId = (window.currentProfile && window.currentProfile.selectedCardBack) ? window.currentProfile.selectedCardBack : 'default';
+    const deckStyleMap = {
+        'back_gold': 'background: linear-gradient(135deg, #ffd700, #b8860b);',
+        'back_neon': 'background: linear-gradient(135deg, #00e1ff, #004d80); border-color: #00e1ff;',
+        'back_dark': 'background: #111; border-color: #444;'
+    };
+    const extraDeckStyle = deckStyleMap[backId] || '';
+
     // Cache the original center piles HTML template to prevent rendering blank cells
     const centerCellHTML = `
         <div class="table-center-cell glass-panel" id="tableCenterCell" style="${layout.centerStyle}">
             <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; font-weight:800;">Mesa Central</div>
             <div class="center-piles">
-                <div class="deck-card" id="deckPile">
+                <div class="deck-card" id="deckPile" style="${extraDeckStyle}">
                     <svg viewBox="0 0 24 24" style="width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2;"><circle cx="12" cy="12" r="2"/><path d="M12 10a4 4 0 1 1-3.5 5.9M9.2 12a4 4 0 1 1 6.3 3.5M14.8 12a4 4 0 1 1-2.8-5.7"/><path d="M12 2v2M4.9 4.9l1.4 1.4M2 12h2M4.9 19.1l1.4-1.4M12 20v2M19.1 19.1l-1.4-1.4M20 12h2M19.1 4.9l1.4 1.4"/></svg>
                     <span class="deck-count" id="deckCount">0</span>
                 </div>
@@ -1370,7 +1387,7 @@ function renderGameBoard() {
 
     handRow.innerHTML = activePlayer.hand.map(card => {
         if (card.type === 'hidden') {
-            return `<div class="card-item hidden-hand-card"></div>`;
+            return `<div class="card-item hidden-hand-card" style="${extraDeckStyle}"></div>`;
         }
 
         let cardColor = card.color;
