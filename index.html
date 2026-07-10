@@ -6,7 +6,7 @@
     <title>Bio-Defensa | El juego de cartas biológico</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
     <style>
         /* Extra custom styles for the lobby elements */
         .stats-grid {
@@ -285,11 +285,12 @@
 
     <!-- Scripts -->
     <!-- Firebase v8 Compat SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="storage.js"></script>
-    <script src="cards.js"></script>
-    <script src="audio.js"></script>
+    <!-- Firebase v8 Compat SDKs (self-hosted) -->
+    <script src="firebase-app.js?v=2"></script>
+    <script src="firebase-database.js?v=2"></script>
+    <script src="storage.js?v=2"></script>
+    <script src="cards.js?v=2"></script>
+    <script src="audio.js?v=2"></script>
     <script>
         let currentStep = 0;
         const totalSteps = 4;
