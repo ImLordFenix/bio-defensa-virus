@@ -82,7 +82,11 @@
                 🌐 Jugar Multijugador P2P
             </button>
             <button class="btn btn-secondary" onclick="openCollectionModal()">
-                🃏 Colección de Cartas
+                🃏 Colección de Cartas (Galería)
+            </button>
+            <button class="btn btn-secondary" onclick="openShopModal()">
+                <div class="btn-icon">🛒</div>
+                Tienda Cosmética
             </button>
             <button class="btn btn-secondary" onclick="openStatsModal()">
                 📊 Historial y Estadísticas
@@ -165,12 +169,12 @@
         </div>
     </div>
 
-    <!-- MODAL: COLLECTION / SHOP -->
-    <div class="modal-overlay" id="collectionModal">
+    <!-- MODAL: SHOP -->
+    <div class="modal-overlay" id="shopModal">
         <div class="modal-content glass-panel" style="max-width: 700px;">
             <div class="modal-header">
                 <h3>Tienda y Colección</h3>
-                <span class="modal-close" onclick="closeModal('collectionModal')">&times;</span>
+                <span class="modal-close" onclick="closeModal('shopModal')">&times;</span>
             </div>
             
             <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 255, 150, 0.1); border: 1px solid var(--color-green); border-radius: 8px; padding: 10px 15px; margin-bottom: 15px;">
@@ -584,8 +588,8 @@
             document.getElementById('settingsModal').style.display = 'flex';
         }
 
-        async function openCollectionModal() {
-            document.getElementById('collectionModal').style.display = 'flex';
+        async function openShopModal() {
+            document.getElementById('shopModal').style.display = 'flex';
             await loadCollection();
         }
 

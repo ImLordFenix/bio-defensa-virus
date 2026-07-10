@@ -393,6 +393,9 @@ function triggerBotOrTurnAction() {
 
             const decision = BioDefensaAI.getDecision(game, game.activePlayerIndex);
             
+            // Allow next turn to trigger bot actions by clearing the flag before execution
+            isBotMoving = false;
+
             if (decision.type === 'play') {
                 game.playCard(
                     game.activePlayerIndex,
@@ -404,8 +407,6 @@ function triggerBotOrTurnAction() {
             } else if (decision.type === 'discard') {
                 game.discardCards(game.activePlayerIndex, decision.cardIds);
             }
-
-            isBotMoving = false;
         }, 400);
     }
 }
@@ -1427,10 +1428,9 @@ function sendEmote(emoji) {
 }
 
 function renderEmote(playerIndex, emoji) {
-    // Find the player's avatar on the board
     const player = game.players[playerIndex];
-    const isMe = playerIndex === myPlayerIndex;
-
+    if (!player) return;
+    const isMe = (playerIndex === myPlayerIndex);
     const boardPanel = Array.from(document.querySelectorAll(isMe ? '.player-board-panel' : '.rival-board')).find(panel => {
         const nameEl = panel.querySelector('.rival-name');
         if (!nameEl) return false;
