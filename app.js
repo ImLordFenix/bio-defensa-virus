@@ -413,7 +413,6 @@ function triggerBotOrTurnAction() {
             } else if (decision.type === 'discard') {
                 playSound('play_card');
                 spawnParticles(null, 'organ', game.activePlayerIndex);
-                showCustomAlert(`🤖 ${activePlayer.name} descartó ${decision.cardIds.length} carta(s).`, 'info');
                 
                 game.discardCards(game.activePlayerIndex, decision.cardIds);
             }
