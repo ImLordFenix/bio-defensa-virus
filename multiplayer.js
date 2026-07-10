@@ -1,14 +1,14 @@
 // multiplayer.js - Firebase Realtime Database Multiplayer Manager
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA972O2AlEU64GO_seemV_N6x-c163Q-vE",
-  authDomain: "bio-defensa-multiplayer.firebaseapp.com",
-  databaseURL: "https://bio-defensa-multiplayer-default-rtdb.firebaseio.com",
-  projectId: "bio-defensa-multiplayer",
-  storageBucket: "bio-defensa-multiplayer.firebasestorage.app",
-  messagingSenderId: "363446108305",
-  appId: "1:363446108305:web:99f42b340c8bc05eac7f30",
-  measurementId: "G-M7HQSSZY9R"
+  apiKey: "AIzaSyAlbpt1adcn1tDENJGII1VghZ55bKtDY3g",
+  authDomain: "bio-defensa-multiplayer-1bf16.firebaseapp.com",
+  databaseURL: "https://bio-defensa-multiplayer-1bf16-default-rtdb.firebaseio.com",
+  projectId: "bio-defensa-multiplayer-1bf16",
+  storageBucket: "bio-defensa-multiplayer-1bf16.firebasestorage.app",
+  messagingSenderId: "849629999158",
+  appId: "1:849629999158:web:814712fe20ce782d63e897",
+  measurementId: "G-62E9F1PF7D"
 };
 
 // Initialize Firebase
