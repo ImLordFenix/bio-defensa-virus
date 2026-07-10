@@ -159,6 +159,27 @@ class BioDefensaMultiplayer {
                 if (b.isHost) return 1;
                 return a.peerId.localeCompare(b.peerId);
             });
+            
+            // Reemplazo por bot si el juego está en curso
+            if (this.game && this.game.players && this.game.players.length > 0 && !this.game.isGameOver) {
+                let stateChanged = false;
+                this.game.players.forEach(p => {
+                    if (!p.isBot && p.peerId && !playersMap[p.peerId]) {
+                        // Jugador desconectado o expulsado
+                        p.isBot = true;
+                        p.aiLevel = 'Normal';
+                        p.name = '🤖 Bot (Reemplazo)';
+                        stateChanged = true;
+                        if (typeof showCustomAlert === 'function') {
+                            showCustomAlert(`Un jugador se ha desconectado. Ahora juega un Bot.`, 'info');
+                        }
+                    }
+                });
+                if (stateChanged) {
+                    this.syncAndBroadcast();
+                }
+            }
+
             this.onPlayerJoined(null);
         });
         

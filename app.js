@@ -191,15 +191,7 @@ window.addEventListener('load', async () => {
         showGameOverModal(winner, coinsEarned);
     };
 
-    // Register user interactions to bypass audio autoplay blocks
-    document.body.addEventListener('click', () => {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (parseFloat(localStorage.getItem('bd_vol_music') || 0.3) > 0 && !bgMusicInterval) {
-            startBackgroundMusic();
-        }
-    }, { once: true });
+    // Audio is unlocked globally via audio.js unlockAudio listener
 
     const params = new URLSearchParams(window.location.search);
     const modeParam = params.get('mode');
@@ -414,7 +406,7 @@ function triggerBotOrTurnAction() {
             }
 
             isBotMoving = false;
-        }, 1500);
+        }, 400);
     }
 }
 
@@ -1436,22 +1428,35 @@ function sendEmote(emoji) {
 
 function renderEmote(playerIndex, emoji) {
     // Find the player's avatar on the board
-    const boardPanel = Array.from(document.querySelectorAll('.player-board-panel')).find(panel => {
-        return panel.querySelector('.player-info h3') && panel.querySelector('.player-info h3').textContent.includes(game.players[playerIndex].nickname);
+    const player = game.players[playerIndex];
+    const isMe = playerIndex === myPlayerIndex;
+
+    const boardPanel = Array.from(document.querySelectorAll(isMe ? '.player-board-panel' : '.rival-board')).find(panel => {
+        const nameEl = panel.querySelector('.rival-name');
+        if (!nameEl) return false;
+        if (isMe) {
+            return nameEl.textContent.includes('TÚ');
+        } else {
+            return nameEl.textContent.includes(player.name);
+        }
     });
     
     if (boardPanel) {
-        const avatarEl = boardPanel.querySelector('.player-info .avatar-display') || boardPanel;
+        const avatarEl = isMe ? boardPanel : boardPanel;
         const rect = avatarEl.getBoundingClientRect();
         
         const emoteEl = document.createElement('div');
         emoteEl.className = 'floating-emote';
         emoteEl.textContent = emoji;
-        emoteEl.style.left = `${rect.left + rect.width / 2}px`;
-        emoteEl.style.top = `${rect.top}px`;
+        // Position roughly in the center-top of the board
+        emoteEl.style.left = `${rect.left + rect.width / 2 - 15}px`;
+        emoteEl.style.top = `${rect.top - 20}px`;
         
         document.body.appendChild(emoteEl);
         
+        // Emote appearance sound
+        try { playSound('cure'); } catch(e) {}
+
         // Remove after animation
         setTimeout(() => emoteEl.remove(), 2000);
     }
