@@ -56,6 +56,9 @@ class BioDefensaMultiplayer {
             gamesWon: this.myGamesWon || 0
         }];
         
+        // Show room code immediately (generated locally, no need to wait for Firebase)
+        this.onRoomCreated(this.roomId);
+        
         this.roomRef = database.ref('rooms/' + this.roomId);
         
         this.roomRef.set({
@@ -63,11 +66,26 @@ class BioDefensaMultiplayer {
             players: {
                 [this.myPeerId]: this.playersList[0]
             }
+        }).then(() => {
+            console.log('Room created successfully:', this.roomId);
+        }).catch((err) => {
+            console.error('Failed to create room in Firebase:', err);
+            this.onError('Error al crear la sala. Comprueba tu conexión a internet e inténtalo de nuevo.');
         });
         
         this.roomRef.onDisconnect().remove();
         this.listenForHostEvents();
-        this.onRoomCreated(this.roomId);
+        
+        // Monitor connection state
+        this._connectionRef = database.ref('.info/connected');
+        this._connectionRef.on('value', (snap) => {
+            if (snap.val() === true) {
+                console.log('Firebase connected');
+            } else {
+                console.warn('Firebase disconnected');
+            }
+        });
+        
         return this.roomId;
     }
 
@@ -77,7 +95,14 @@ class BioDefensaMultiplayer {
         
         this.roomRef = database.ref('rooms/' + this.roomId);
         
-        this.roomRef.child('players').once('value', snapshot => {
+        // Set a timeout in case Firebase doesn't respond
+        const joinTimeout = setTimeout(() => {
+            this.onError('No se pudo conectar al servidor. Comprueba tu conexión a internet.');
+        }, 10000);
+        
+        this.roomRef.child('players').once('value').then(snapshot => {
+            clearTimeout(joinTimeout);
+            
             if (!snapshot.exists()) {
                 this.onError("La sala no existe o el anfitrión se ha desconectado.");
                 return;
@@ -97,11 +122,18 @@ class BioDefensaMultiplayer {
                 gamesWon: this.myGamesWon || 0
             };
             
-            this.roomRef.child('players/' + this.myPeerId).set(myPlayerObj);
+            this.roomRef.child('players/' + this.myPeerId).set(myPlayerObj).catch(err => {
+                console.error('Failed to join room:', err);
+                this.onError('Error al unirse a la sala. Inténtalo de nuevo.');
+            });
             this.roomRef.child('players/' + this.myPeerId).onDisconnect().remove();
             
             this.listenForClientEvents();
             this.onConnected();
+        }).catch(err => {
+            clearTimeout(joinTimeout);
+            console.error('joinRoom error:', err);
+            this.onError('Error al buscar la sala. Comprueba tu conexión a internet.');
         });
     }
 
@@ -354,6 +386,8 @@ class BioDefensaMultiplayer {
             this.roomRef.child('gameState').set({
                 json: stateJson,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).catch(err => {
+                console.error('syncAndBroadcast Firebase write error:', err);
             });
         } catch (e) {
             console.error("syncAndBroadcast error:", e);

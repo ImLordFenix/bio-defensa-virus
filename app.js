@@ -224,11 +224,19 @@ window.addEventListener('load', async () => {
 
 // --- Multiplayer Connection Setup ---
 function initMultiplayer(nickname, avatar, isHost, code = null, gamesWon = 0) {
+    // Check if Firebase SDK is loaded before attempting multiplayer
+    if (typeof firebase === 'undefined' || !firebase.database) {
+        showCustomAlert('Error: No se pudo cargar el servicio multijugador. Comprueba tu conexión a internet y recarga la página.', 'error');
+        document.getElementById('roomCodeDisplay').textContent = 'Error de conexión';
+        return;
+    }
+
     multiplayer = new BioDefensaMultiplayer(game);
     document.getElementById('lobbyControls').style.display = 'block';
 
     multiplayer.onRoomCreated = (roomId) => {
         document.getElementById('roomCodeDisplay').textContent = roomId;
+        addLogToUI({ message: `Sala ${roomId} creada. Esperando jugadores...`, icon: '🏠' });
     };
 
     multiplayer.onPlayerJoined = (player) => {
@@ -241,7 +249,11 @@ function initMultiplayer(nickname, avatar, isHost, code = null, gamesWon = 0) {
 
     multiplayer.onPlayerLeft = (player) => {
         updateLobbyList();
-        addLogToUI({ message: `El jugador ${player.nickname} ha abandonado la sala.`, icon: '🚪' });
+        if (player && player.nickname) {
+            addLogToUI({ message: `El jugador ${player.nickname} ha abandonado la sala.`, icon: '🚪' });
+        } else {
+            addLogToUI({ message: 'Un jugador ha abandonado la sala.', icon: '🚪' });
+        }
     };
 
     multiplayer.onChatMessage = (author, msg) => {
@@ -297,17 +309,25 @@ function initMultiplayer(nickname, avatar, isHost, code = null, gamesWon = 0) {
 
     multiplayer.onError = (err) => {
         showCustomAlert(err, 'error');
+        // Give the user time to read the error before redirecting
         setTimeout(() => {
             window.location.href = 'index.html';
-        }, 3000);
+        }, 4000);
     };
 
     multiplayer.init(nickname, avatar, gamesWon).then(() => {
         if (isHost) {
             multiplayer.createRoom();
         } else {
+            if (!code) {
+                showCustomAlert('No se proporcionó un código de sala.', 'error');
+                return;
+            }
             multiplayer.joinRoom(code);
         }
+    }).catch(err => {
+        console.error('Multiplayer init error:', err);
+        showCustomAlert('Error al inicializar el multijugador. Inténtalo de nuevo.', 'error');
     });
 }
 
