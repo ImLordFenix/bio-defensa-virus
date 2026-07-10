@@ -124,7 +124,7 @@
 
     <!-- MODAL: MULTIPLAYER LOBBY -->
     <div class="modal-overlay" id="multiplayerModal">
-        <div class="modal-content glass-panel">
+        <div class="modal-content glass-panel" style="max-width: 600px;">
             <div class="modal-header">
                 <h3>Multijugador P2P WebRTC</h3>
                 <span class="modal-close" onclick="closeModal('multiplayerModal')">&times;</span>
@@ -133,18 +133,33 @@
                 <p style="font-size: 0.85rem; color: var(--text-secondary);">
                     La conexión se realiza directamente entre navegadores. Elige si quieres crear una sala o unirte a una existente.
                 </p>
-                <div style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                    <h4>Crear Nueva Sala</h4>
-                    <button class="btn btn-primary" onclick="createRoom()" style="width:100%; margin-top:10px;">
-                        Crear Sala (Ser Anfitrión)
-                    </button>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 250px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <h4>Crear Nueva Sala</h4>
+                        <label style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.85rem; cursor:pointer;">
+                            <input type="checkbox" id="publicRoomCheck" checked> Hacer sala pública (visible)
+                        </label>
+                        <button class="btn btn-primary" onclick="createRoom()" style="width:100%; margin-top:10px;">
+                            Crear Sala
+                        </button>
+                    </div>
+                    <div style="flex: 1; min-width: 250px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <h4>Unirse con Código</h4>
+                        <input type="text" id="joinCodeInput" placeholder="Código de sala..." style="width: 100%; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-glass); padding: 10px; border-radius: 8px; color: white; margin-top: 10px; outline: none; text-transform: uppercase;">
+                        <button class="btn btn-secondary" onclick="joinRoom()" style="width:100%; margin-top:10px;">
+                            Unirse
+                        </button>
+                    </div>
                 </div>
+                
                 <div style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                    <h4>Unirse con Código</h4>
-                    <input type="text" id="joinCodeInput" placeholder="Introduce el código de la sala..." style="width: 100%; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-glass); padding: 10px; border-radius: 8px; color: white; margin-top: 10px; outline: none;">
-                    <button class="btn btn-secondary" onclick="joinRoom()" style="width:100%; margin-top:10px;">
-                        Unirse a la Sala
-                    </button>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h4>Salas Públicas Activas</h4>
+                        <button onclick="refreshPublicRooms()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='rotate(90deg)'" onmouseout="this.style.transform='rotate(0deg)'" title="Actualizar">🔄</button>
+                    </div>
+                    <div id="publicRoomsList" style="max-height: 180px; overflow-y: auto; margin-top: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 10px; font-size:0.85rem; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="text-align:center; color:var(--text-muted); padding: 10px;">Cargando salas...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -482,6 +497,7 @@
 
         function openMultiplayerModal() {
             document.getElementById('multiplayerModal').style.display = 'flex';
+            refreshPublicRooms();
         }
 
         function openSettingsModal() {
@@ -525,9 +541,74 @@
         }
 
         async function createRoom() {
+            const isPublic = document.getElementById('publicRoomCheck') ? document.getElementById('publicRoomCheck').checked : true;
             await saveConfig();
-            window.location.href = 'game.html?mode=create';
+            window.location.href = `game.html?mode=create&public=${isPublic}`;
         }
+        
+        async function refreshPublicRooms() {
+            const listDiv = document.getElementById('publicRoomsList');
+            if (!listDiv) return;
+            
+            listDiv.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding: 10px;">Buscando salas...</div>';
+            
+            try {
+                // Using Firebase REST API for quick readonly fetch
+                const res = await fetch('https://bio-defensa-multiplayer-1bf16-default-rtdb.firebaseio.com/rooms.json');
+                if (!res.ok) throw new Error("Fallo al conectar con el servidor.");
+                const data = await res.json();
+                
+                if (!data) {
+                    listDiv.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding: 10px;">No hay salas públicas en este momento. ¡Crea una!</div>';
+                    return;
+                }
+                
+                let html = '';
+                let roomCount = 0;
+                
+                for (const roomId in data) {
+                    const room = data[roomId];
+                    // Show only public rooms that haven't started playing yet (isGameOver === false implicitly or explicitly, but mostly where state isn't started)
+                    // Wait, rooms might just have players and host information.
+                    const isPublic = room.isPublic === true;
+                    const started = room.gameState && room.gameState.isGameOver !== undefined; // Rough check if game has started
+                    
+                    if (isPublic && !started) {
+                        const hostName = room.hostName || 'Anónimo';
+                        const numPlayers = room.players ? Object.keys(room.players).length : 1;
+                        
+                        // We assume max 12 players for now
+                        html += `
+                            <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+                                <div>
+                                    <div style="font-weight:bold; color:var(--text-primary); margin-bottom: 3px;">Sala de ${hostName}</div>
+                                    <div style="font-size:0.75rem; color:var(--text-muted);">Jugadores: ${numPlayers}</div>
+                                </div>
+                                <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.8rem;" onclick="joinPublicRoom('${roomId}')">
+                                    Entrar
+                                </button>
+                            </div>
+                        `;
+                        roomCount++;
+                    }
+                }
+                
+                if (roomCount === 0) {
+                    listDiv.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding: 10px;">No hay salas públicas esperando jugadores.</div>';
+                } else {
+                    listDiv.innerHTML = html;
+                }
+                
+            } catch (err) {
+                listDiv.innerHTML = '<div style="text-align:center; color:var(--color-virus); padding: 10px;">Error al cargar las salas.</div>';
+            }
+        }
+
+        async function joinPublicRoom(code) {
+            await saveConfig();
+            window.location.href = `game.html?mode=join&code=${code}`;
+        }
+
 
         // Custom alert helper for index lobby
         function showCustomAlert(message, type = 'info') {

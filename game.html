@@ -91,6 +91,21 @@
                 <div class="timer-ring" id="turnTimerText">30s</div>
             </div>
 
+            <!-- EMOTES BUTTON -->
+            <div style="position: absolute; bottom: 20px; left: 20px; z-index: 50;">
+                <div id="emotesPanel" style="display: none; background: rgba(0,0,0,0.8); border: 1px solid var(--border-glass); border-radius: 8px; padding: 10px; flex-direction: row; gap: 10px; margin-bottom: 10px; backdrop-filter: blur(10px);">
+                    <span class="emote-btn" onclick="sendEmote('😎')">😎</span>
+                    <span class="emote-btn" onclick="sendEmote('😡')">😡</span>
+                    <span class="emote-btn" onclick="sendEmote('😭')">😭</span>
+                    <span class="emote-btn" onclick="sendEmote('💉')">💉</span>
+                    <span class="emote-btn" onclick="sendEmote('🦠')">🦠</span>
+                    <span class="emote-btn" onclick="sendEmote('😱')">😱</span>
+                </div>
+                <button class="btn btn-secondary" onclick="toggleEmotesPanel()" style="border-radius: 50%; width: 50px; height: 50px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                    💬
+                </button>
+            </div>
+
             <div class="sidebar-tabs">
                 <button class="tab-btn active" id="tabLogsBtn" onclick="selectTab('logs')">HISTORIAL</button>
                 <button class="tab-btn" id="tabChatBtn" onclick="selectTab('chat')">CHAT</button>

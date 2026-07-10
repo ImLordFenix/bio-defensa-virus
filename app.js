@@ -214,7 +214,8 @@ window.addEventListener('load', async () => {
         renderGameBoard();
     } 
     else if (modeParam === 'create') {
-        initMultiplayer(profile.nickname, profile.avatar, true, null, stats.gamesWon);
+        const isPublic = params.get('public') !== 'false'; // Default to true if missing
+        initMultiplayer(profile.nickname, profile.avatar, true, null, stats.gamesWon, isPublic);
     } 
     else if (modeParam === 'join') {
         const code = params.get('code');
@@ -223,7 +224,7 @@ window.addEventListener('load', async () => {
 });
 
 // --- Multiplayer Connection Setup ---
-function initMultiplayer(nickname, avatar, isHost, code = null, gamesWon = 0) {
+function initMultiplayer(nickname, avatar, isHost, code = null, gamesWon = 0, isPublic = true) {
     // Check if Firebase SDK is loaded before attempting multiplayer
     if (typeof firebase === 'undefined' || !firebase.database) {
         showCustomAlert('Error: No se pudo cargar el servicio multijugador. Comprueba tu conexión a internet y recarga la página.', 'error');
@@ -315,7 +316,7 @@ function initMultiplayer(nickname, avatar, isHost, code = null, gamesWon = 0) {
         }, 4000);
     };
 
-    multiplayer.init(nickname, avatar, gamesWon).then(() => {
+    multiplayer.init(nickname, avatar, gamesWon, isPublic).then(() => {
         if (isHost) {
             multiplayer.createRoom();
         } else {
@@ -1393,6 +1394,52 @@ function renderGameBoard() {
 }
 
 // --- Chat Actions ---
+function handleChatKeyPress(ev) {
+    if (ev.key === 'Enter') handleChatEnter(ev);
+}
+
+// --- Emotes System ---
+function toggleEmotesPanel() {
+    const panel = document.getElementById('emotesPanel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    }
+}
+
+function sendEmote(emoji) {
+    toggleEmotesPanel();
+    if (multiplayer) {
+        multiplayer.sendAction('emote', { emoji: emoji });
+        if (multiplayer.isHost) {
+            // Host sends their own emote directly
+            renderEmote(myPlayerIndex, emoji);
+        }
+    }
+}
+
+function renderEmote(playerIndex, emoji) {
+    // Find the player's avatar on the board
+    const boardPanel = Array.from(document.querySelectorAll('.player-board-panel')).find(panel => {
+        return panel.querySelector('.player-info h3') && panel.querySelector('.player-info h3').textContent.includes(game.players[playerIndex].nickname);
+    });
+    
+    if (boardPanel) {
+        const avatarEl = boardPanel.querySelector('.player-info .avatar-display') || boardPanel;
+        const rect = avatarEl.getBoundingClientRect();
+        
+        const emoteEl = document.createElement('div');
+        emoteEl.className = 'floating-emote';
+        emoteEl.textContent = emoji;
+        emoteEl.style.left = `${rect.left + rect.width / 2}px`;
+        emoteEl.style.top = `${rect.top}px`;
+        
+        document.body.appendChild(emoteEl);
+        
+        // Remove after animation
+        setTimeout(() => emoteEl.remove(), 2000);
+    }
+}
+
 function handleChatEnter(ev) {
     if (ev.key === 'Enter') {
         sendChatMessage();

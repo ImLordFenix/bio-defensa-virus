@@ -18,12 +18,20 @@ if (!firebase.apps.length) {
 const database = firebase.database();
 
 class BioDefensaMultiplayer {
-    constructor(game) {
-        this.game = game;
-        this.roomId = null;
+    constructor(gameInstance) {
+        this.game = gameInstance;
         this.isHost = false;
+        this.roomId = null;
+        
+        let storedPeerId = sessionStorage.getItem('bd_peer_id');
+        if (!storedPeerId) {
+            storedPeerId = Math.random().toString(36).substring(2, 15);
+            sessionStorage.setItem('bd_peer_id', storedPeerId);
+        }
+        this.myPeerId = storedPeerId;
+        
         this.playersList = [];
-        this.myPeerId = 'player_' + Math.random().toString(36).substr(2, 9);
+        this.myNickname = 'Jugador';
         
         // Hooks
         this.onRoomCreated = () => {};
@@ -37,11 +45,12 @@ class BioDefensaMultiplayer {
         this.roomRef = null;
     }
 
-    init(nickname, avatar, gamesWon = 0) {
+    init(nickname, avatar, gamesWon = 0, isPublic = true) {
         console.log("🔥 INICIALIZANDO MULTIJUGADOR. Conectando a:", firebaseConfig.databaseURL);
         this.myNickname = nickname || 'Anónimo';
         this.myAvatar = avatar || '🕵️';
         this.myGamesWon = gamesWon;
+        this.isPublic = isPublic;
         return Promise.resolve();
     }
 
@@ -64,6 +73,9 @@ class BioDefensaMultiplayer {
         
         this.roomRef.set({
             createdAt: firebase.database.ServerValue.TIMESTAMP,
+            isPublic: this.isPublic,
+            hostName: this.myNickname,
+            numPlayers: 1,
             players: {
                 [this.myPeerId]: this.playersList[0]
             }
@@ -163,6 +175,17 @@ class BioDefensaMultiplayer {
             snapshot.ref.remove();
         });
 
+        this.roomRef.child('emotes').on('child_added', snapshot => {
+            const data = snapshot.val();
+            if (data && typeof renderEmote === 'function') {
+                const playerIndex = this.game.players.findIndex(p => p.peerId === data.peerId);
+                if (playerIndex !== -1) {
+                    renderEmote(playerIndex, data.emoji);
+                }
+            }
+            snapshot.ref.remove();
+        });
+
         this.roomRef.child('reaction_responses').on('child_added', snapshot => {
             const resp = snapshot.val();
             if (resp) {
@@ -204,6 +227,16 @@ class BioDefensaMultiplayer {
         this.roomRef.child('chat').on('child_added', snapshot => {
             const data = snapshot.val();
             if (data) this.onChatMessage(data.nickname, data.message);
+        });
+
+        this.roomRef.child('emotes').on('child_added', snapshot => {
+            const data = snapshot.val();
+            if (data && typeof renderEmote === 'function') {
+                const playerIndex = this.game.players.findIndex(p => p.peerId === data.peerId);
+                if (playerIndex !== -1) {
+                    renderEmote(playerIndex, data.emoji);
+                }
+            }
         });
         
         this.roomRef.child('gameState').on('value', snapshot => {
@@ -508,10 +541,20 @@ class BioDefensaMultiplayer {
     // CLIENT: Send an action to the host via Firebase
     // =========================================================================
     sendAction(actionType, data) {
+        if (!this.roomRef) return;
+        
+        if (actionType === 'emote') {
+            this.roomRef.child('emotes').push({
+                peerId: this.myPeerId,
+                emoji: data.emoji,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            return;
+        }
+
         if (this.isHost) {
             this.handleClientAction(this.myPeerId, { type: actionType, ...data });
         } else {
-            if (!this.roomRef) return;
             this.roomRef.child('actions').push({
                 peerId: this.myPeerId,
                 data: Object.assign({ type: actionType }, data),
