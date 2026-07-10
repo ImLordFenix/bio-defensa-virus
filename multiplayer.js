@@ -38,6 +38,7 @@ class BioDefensaMultiplayer {
     }
 
     init(nickname, avatar, gamesWon = 0) {
+        console.log("🔥 INICIALIZANDO MULTIJUGADOR. Conectando a:", firebaseConfig.databaseURL);
         this.myNickname = nickname || 'Anónimo';
         this.myAvatar = avatar || '🕵️';
         this.myGamesWon = gamesWon;
