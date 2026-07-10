@@ -1160,9 +1160,46 @@ body {
         margin-bottom: 0;
         margin-right: 15px;
         width: 140px;
-        flex-shrink: 0;
+        flex-shrink: 0;}
+
+/* === SENSORY FEEDBACK (PARTICLES) === */
+.particle {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    animation: particleOut 0.8s ease-out forwards;
+}
+.particle-virus {
+    background-color: var(--color-virus);
+    box-shadow: 0 0 10px var(--color-virus);
+}
+.particle-medicine {
+    background-color: var(--color-medicine);
+    box-shadow: 0 0 10px var(--color-medicine);
+}
+.particle-organ {
+    background-color: var(--color-organ);
+}
+.particle-special {
+    background-color: var(--color-special);
+    box-shadow: 0 0 10px var(--color-special);
+}
+
+@keyframes particleOut {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
+        opacity: 0;
     }
 }
+
+/* Base keyframes */
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* Responsive adjustments for shorter screen heights (no F11 fullscreen) */

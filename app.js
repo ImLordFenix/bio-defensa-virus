@@ -411,6 +411,40 @@ function triggerBotOrTurnAction() {
     }
 }
 
+// --- Sensory Feedback (Particles & Sounds) ---
+function playCardSound(card) {
+    if (!card) return;
+    if (card.type === 'virus') playSound('infect');
+    else if (card.type === 'medicine') playSound('cure');
+    else playSound('play_card');
+}
+
+function spawnParticles(ev, type) {
+    const x = ev.clientX;
+    const y = ev.clientY;
+    
+    for (let i = 0; i < 12; i++) {
+        const particle = document.createElement('div');
+        particle.className = `particle particle-${type}`;
+        
+        // Random spread
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 20 + Math.random() * 50;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity;
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        
+        document.body.appendChild(particle);
+        
+        // Remove after animation
+        setTimeout(() => particle.remove(), 800);
+    }
+}
+
 // --- Drag & Drop Implementation ---
 function allowDrag(ev) {
     ev.preventDefault();
@@ -554,6 +588,10 @@ function handleOrganDrop(ev, targetPlayerIdx, targetOrganIdx) {
         }
     }
 
+    // Visual and sound feedback
+    playCardSound(card);
+    spawnParticles(ev, card.type);
+
     executePlay(cardId, targetPlayerIdx, targetOrganIdx);
 }
 
@@ -566,10 +604,18 @@ function handleDiscardDrop(ev) {
     const activePlayer = game.players[myPlayerIndex];
     const card = activePlayer ? activePlayer.hand.find(c => c.id === cardId) : null;
     if (card && card.type === 'special' && card.action === 'apparition') {
+        // Visual and sound feedback for apparition
+        playCardSound(card);
+        spawnParticles(ev, 'special');
+        
         // Apparition / Llorona is dropped on the discard pile to activate it!
         executePlay(cardId, myPlayerIndex, null);
         return;
     }
+
+    // Visual and sound feedback for regular discard
+    playSound('play_card');
+    spawnParticles(ev, 'organ'); // generic gray/organ particles for discard
 
     if (multiplayer && !multiplayer.isHost) {
         multiplayer.sendAction('discard', {
