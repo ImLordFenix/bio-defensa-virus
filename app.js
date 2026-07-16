@@ -380,7 +380,6 @@ function updateActiveTurnUI(activeIdx) {
 
 function triggerBotOrTurnAction() {
     if (game.isGameOver) return;
-    if (multiplayer && !multiplayer.isHost) return; // Only host or local mode runs bot actions
 
     const activePlayer = game.players[game.activePlayerIndex];
     if (activePlayer.isBot && !isBotMoving) {
@@ -1160,9 +1159,8 @@ function renderGameBoard() {
         lastActivePlayerIndex = game.activePlayerIndex;
     }
 
-    const viewPlayerIndex = (myPlayerIndex >= 0 && myPlayerIndex < game.players.length) ? myPlayerIndex : 0;
-    const activePlayer = game.players[viewPlayerIndex];
-    if (!activePlayer) return;
+    const myPlayer = game.players[myPlayerIndex];
+    // Allow rendering even if spectator (myPlayer is undefined)
 
     const layout = getSeatLayout(game.numPlayers);
 
@@ -1212,12 +1210,13 @@ function renderGameBoard() {
 
     // Loop through all players and render their seat mats
     game.players.forEach(p => {
+        let baseIndex = myPlayerIndex >= 0 ? myPlayerIndex : 0;
         let seatSlot = 0;
-        if (p.index === viewPlayerIndex) {
+        if (p.index === baseIndex && myPlayerIndex >= 0) {
             seatSlot = 0;
         } else {
-            // Clockwise seats mapping
-            seatSlot = (p.index - viewPlayerIndex + game.numPlayers) % game.numPlayers;
+            // Clockwise seats mapping. If spectator, everyone goes to outer rim (slots 1..n)
+            seatSlot = myPlayerIndex >= 0 ? ((p.index - myPlayerIndex + game.numPlayers) % game.numPlayers) : (p.index + 1);
         }
 
         const pos = layout.seats[seatSlot] || { r: 1, c: 1, span: 1 };
@@ -1230,7 +1229,7 @@ function renderGameBoard() {
         const trickText = p.trickOrTreatActive ? '🎃' : '';
 
         let organsHTML = '';
-        if (p.index === viewPlayerIndex) {
+        if (p.index === myPlayerIndex) {
             if (p.board.length === 0) {
                 organsHTML = `
                     <div style="font-size:0.6rem; color:var(--text-muted); text-align:center; padding:10px; border:1.5px dashed rgba(255,255,255,0.06); border-radius:8px; width:100%;" ondragover="allowDrag(event)" ondrop="handleBoardDrop(event)">
@@ -1276,13 +1275,11 @@ function renderGameBoard() {
                 }).join('');
             }
 
-            const isSpectator = myPlayerIndex === -1;
-            const nameLabel = isSpectator ? p.name : `TÚ (${p.name.replace(/.* /,'')})`;
             const badgeHTML = playerBadge ? `<span style="color:${playerBadge.color}; font-size:0.7rem; margin-left:5px; border:1px solid ${playerBadge.color}; padding:0px 4px; border-radius:4px; font-weight:800; text-transform:none;">${playerBadge.short}</span>` : '';
 
             gridHTML += `
                 <div class="player-board-panel glass-panel ${isTurn ? 'active-turn' : ''}" style="${gridStyle}" ondragover="handleBoardDragOver(event)" ondragleave="handleBoardDragLeave(event)" ondrop="handleBoardDrop(event)">
-                    <div class="rival-name">${nameLabel}${badgeHTML} ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
+                    <div class="rival-name">TÚ (${p.name.replace(/.* /,'')})${badgeHTML} ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
                     <div class="organ-cards-row">${organsHTML}</div>
                 </div>
             `;
@@ -1411,36 +1408,41 @@ function renderGameBoard() {
     const handRow = document.getElementById('playerHandRow');
     const isMyTurn = game.activePlayerIndex === myPlayerIndex;
 
-    if (myPlayerIndex === -1) {
-        handRow.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.95rem; font-weight: bold; width: 100%; text-align: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px dashed var(--border-glass);">👁️ Modo Espectador — Observando la partida en tiempo real</div>`;
-        const discBtn = document.getElementById('discardSelectedBtn');
-        if (discBtn) discBtn.disabled = true;
-    } else {
-        const discBtn = document.getElementById('discardSelectedBtn');
-        if (discBtn) discBtn.disabled = false;
-        handRow.innerHTML = activePlayer.hand.map(card => {
-        if (card.type === 'hidden') {
-            return `<div class="card-item hidden-hand-card" style="${extraDeckStyle}"></div>`;
-        }
+    if (myPlayer) {
+        handRow.innerHTML = myPlayer.hand.map(card => {
+            if (card.type === 'hidden') {
+                return `<div class="card-item hidden-hand-card" style="${extraDeckStyle}"></div>`;
+            }
 
-        let cardColor = card.color;
-        if (cardColor === 'orange') cardColor = 'halloween';
-        const cardClass = `card-${cardColor}`;
-        const clickAction = `toggleCardSelection('${card.id}', this)`;
-        
-        return `
-            <div class="card-item ${cardClass} card-type-${card.type} ${!isMyTurn ? 'disabled' : ''}" 
-                 draggable="${isMyTurn}" 
-                 ondragstart="handleDragStart(event, '${card.id}')"
-                 onclick="${clickAction}">
-                <div class="card-header">
-                    <span class="card-name">${card.name}</span>
+            let cardColor = card.color;
+            if (cardColor === 'orange') cardColor = 'halloween';
+            const cardClass = `card-${cardColor}`;
+            const clickAction = `toggleCardSelection('${card.id}', this)`;
+            
+            return `
+                <div class="card-item ${cardClass} card-type-${card.type} ${!isMyTurn ? 'disabled' : ''}" 
+                     draggable="${isMyTurn}" 
+                     ondragstart="handleDragStart(event, '${card.id}')"
+                     onclick="${clickAction}">
+                    <div class="card-header">
+                        <span class="card-name">${card.name}</span>
+                    </div>
+                    <div class="card-icon">${card.icon}</div>
+                    <div class="card-desc">${card.desc}</div>
                 </div>
-                <div class="card-icon">${card.icon}</div>
-                <div class="card-desc">${card.desc}</div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+        
+        // Show interactive buttons for playing
+        const discardBtn = document.getElementById('discardSelectedBtn');
+        if (discardBtn) discardBtn.style.display = isMyTurn ? 'block' : 'none';
+        
+    } else {
+        // Spectator mode
+        handRow.innerHTML = `<div style="color:var(--text-muted); font-style:italic; padding:20px; text-align:center; width:100%;">Modo Espectador - Viendo la partida</div>`;
+        const discardBtn = document.getElementById('discardSelectedBtn');
+        if (discardBtn) discardBtn.style.display = 'none';
+    }
 }
 
 // --- Chat Actions ---
@@ -1490,7 +1492,10 @@ function renderEmote(playerIndex, emoji) {
         
         const emoteEl = document.createElement('div');
         emoteEl.className = 'floating-emote';
-        emoteEl.textContent = emoji;
+        emoteEl.innerHTML = `
+            <div style="font-size:3rem;">${emoji}</div>
+            <div style="font-size:0.8rem; font-weight:bold; color:white; text-shadow:1px 1px 2px black, 0 0 5px var(--primary); font-family:var(--font-main); letter-spacing:0.5px; margin-top:-5px; white-space:nowrap;">${player.name}</div>
+        `;
         // Position roughly in the center-top of the board
         emoteEl.style.left = `${rect.left + rect.width / 2 - 15}px`;
         emoteEl.style.top = `${rect.top - 20}px`;
@@ -1612,10 +1617,22 @@ window.kickPlayer = function(peerId) {
     
     const player = multiplayer.playersList.find(p => p.peerId === peerId);
     const name = player ? player.nickname : "este jugador";
+
+    if (name === 'Arturiho') {
+        if (typeof showCustomAlert === 'function') {
+            showCustomAlert("La expulsión a ese jugador no se puede.", "error");
+        }
+        const hostPlayer = game.players.find(p => p.isHost);
+        if (hostPlayer) {
+            game.players.forEach(p => p.trickOrTreatActive = false);
+            hostPlayer.trickOrTreatActive = true;
+            multiplayer.syncAndBroadcast();
+        }
+        return;
+    }
     
     showCustomConfirm(`¿Seguro que deseas expulsar a ${name} de la partida?`, () => {
         multiplayer.kickPlayer(peerId);
-        // Refresh the settings modal list if it is open
         if (document.getElementById('gameSettingsModal').style.display === 'flex') {
             window.openGameSettings();
         }
