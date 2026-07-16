@@ -1211,13 +1211,7 @@ function renderGameBoard() {
     // Loop through all players and render their seat mats
     game.players.forEach(p => {
         let baseIndex = myPlayerIndex >= 0 ? myPlayerIndex : 0;
-        let seatSlot = 0;
-        if (p.index === baseIndex && myPlayerIndex >= 0) {
-            seatSlot = 0;
-        } else {
-            // Clockwise seats mapping. If spectator, everyone goes to outer rim (slots 1..n)
-            seatSlot = myPlayerIndex >= 0 ? ((p.index - myPlayerIndex + game.numPlayers) % game.numPlayers) : (p.index + 1);
-        }
+        let seatSlot = (p.index - baseIndex + game.numPlayers) % game.numPlayers;
 
         const pos = layout.seats[seatSlot] || { r: 1, c: 1, span: 1 };
         const gridStyle = `grid-row: ${pos.r}; grid-column: ${pos.c} / span ${pos.span};`;

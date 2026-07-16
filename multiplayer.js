@@ -551,8 +551,8 @@ class BioDefensaMultiplayer {
         const idxName = this.game.players.findIndex(p => p.name === myName && p.index !== 0);
         if (idxName !== -1) return idxName;
         
-        // Absolute fallback for guests: you must be player 1 (or the first non-host slot)
-        return 1;
+        // Si no se encuentra (espectador que se une tarde), devolver -1
+        return -1;
     }
 
     broadcastState() {
