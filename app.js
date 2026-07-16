@@ -1453,6 +1453,9 @@ function sendEmote(emoji) {
             // Host sends their own emote directly
             renderEmote(myPlayerIndex, emoji);
         }
+    } else {
+        // Local mode direct visual trigger
+        renderEmote(myPlayerIndex, emoji);
     }
 }
 

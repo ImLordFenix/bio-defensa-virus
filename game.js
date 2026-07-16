@@ -337,6 +337,7 @@ class VirusGame {
             }
             if (act === "trick_or_treat") {
                 if (targetPlayerIndex === playerIndex) return { valid: false, reason: "Elige un oponente." };
+                if (targetPlayer.trickOrTreatActive) return { valid: false, reason: "Este jugador ya tiene la maldición de Truco o Trato." };
                 return { valid: true };
             }
         }
@@ -743,6 +744,10 @@ class VirusGame {
             }
         }
         else if (act === "trick_or_treat") {
+            // Only 1 pumpkin token can exist in the game. Remove it from everyone else.
+            this.players.forEach(p => {
+                p.trickOrTreatActive = false;
+            });
             targetPlayer.trickOrTreatActive = true;
             this.log(`¡Truco o Trato! ${targetPlayer.name} no puede ganar hasta curar un órgano ajeno.`, { icon: '🎃' });
         }
