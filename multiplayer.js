@@ -113,16 +113,21 @@ class BioDefensaMultiplayer {
             this.onError('No se pudo conectar al servidor. Comprueba tu conexión a internet.');
         }, 10000);
         
-        this.roomRef.child('players').once('value').then(snapshot => {
+        this.roomRef.once('value').then(roomSnapshot => {
             clearTimeout(joinTimeout);
             
-            if (!snapshot.exists()) {
+            if (!roomSnapshot.exists()) {
                 this.onError("La sala no existe o el anfitrión se ha desconectado.");
                 return;
             }
             
-            const players = snapshot.val();
-            if (Object.keys(players).length >= 12) {
+            const roomData = roomSnapshot.val();
+            const players = roomData.players || {};
+            
+            // If the game has already started (gameState exists), join as a spectator!
+            const isSpectator = !!roomData.gameState;
+            
+            if (!isSpectator && Object.keys(players).length >= 12) {
                 this.onError("La sala está llena.");
                 return;
             }
@@ -132,7 +137,8 @@ class BioDefensaMultiplayer {
                 nickname: this.myNickname,
                 avatar: this.myAvatar,
                 isHost: false,
-                gamesWon: this.myGamesWon || 0
+                gamesWon: this.myGamesWon || 0,
+                isSpectator: isSpectator
             };
             
             this.roomRef.child('players/' + this.myPeerId).set(myPlayerObj).catch(err => {
@@ -143,6 +149,10 @@ class BioDefensaMultiplayer {
             
             this.listenForClientEvents();
             this.onConnected();
+            
+            if (isSpectator && typeof showCustomAlert === 'function') {
+                showCustomAlert("La partida ya ha comenzado. Has entrado como Espectador.", "success");
+            }
         }).catch(err => {
             clearTimeout(joinTimeout);
             console.error('joinRoom error:', err);
@@ -153,8 +163,7 @@ class BioDefensaMultiplayer {
     listenForHostEvents() {
         this.roomRef.child('players').on('value', snapshot => {
             if (!snapshot.exists()) return;
-            const playersMap = snapshot.val();
-            this.playersList = Object.values(playersMap).sort((a, b) => {
+            this.playersList = Object.values(playersMap).filter(p => !p.isSpectator).sort((a, b) => {
                 if (a.isHost) return -1;
                 if (b.isHost) return 1;
                 return a.peerId.localeCompare(b.peerId);
@@ -167,11 +176,12 @@ class BioDefensaMultiplayer {
                     if (!p.isBot && p.peerId && !playersMap[p.peerId]) {
                         // Jugador desconectado o expulsado
                         p.isBot = true;
-                        p.aiLevel = 'Normal';
-                        p.name = '🤖 Bot (Reemplazo)';
+                        p.difficulty = 'hard'; // Bot profesional!
+                        p.aiLevel = 'Pro';
+                        p.name = `🤖 Bot ${p.name.replace(/.* /, '')} (Pro)`;
                         stateChanged = true;
                         if (typeof showCustomAlert === 'function') {
-                            showCustomAlert(`Un jugador se ha desconectado. Ahora juega un Bot.`, 'info');
+                            showCustomAlert(`Un jugador se ha desconectado. Ahora juega un Bot Profesional (Pro).`, 'info');
                         }
                     }
                 });
@@ -237,7 +247,7 @@ class BioDefensaMultiplayer {
                 return;
             }
             const playersMap = snapshot.val();
-            this.playersList = Object.values(playersMap).sort((a, b) => {
+            this.playersList = Object.values(playersMap).filter(p => !p.isSpectator).sort((a, b) => {
                 if (a.isHost) return -1;
                 if (b.isHost) return 1;
                 return a.peerId.localeCompare(b.peerId);
@@ -304,6 +314,13 @@ class BioDefensaMultiplayer {
                         const targetPlayerName = targetPlayer ? targetPlayer.name : "el oponente";
                         if (window.showWaitingForReaction) {
                             window.showWaitingForReaction(targetPlayerName);
+                        }
+                    } else {
+                        // For OTHER players/spectators: show waiting alert or notification!
+                        const attackerPlayer = this.game.players[attackerIndex];
+                        const targetPlayer = this.game.players[req.data.targetIdx];
+                        if (attackerPlayer && targetPlayer && window.showWaitingForReaction) {
+                            window.showWaitingForReaction(`${targetPlayer.name} (atacado por ${attackerPlayer.name})`);
                         }
                     }
                 }

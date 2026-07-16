@@ -380,6 +380,7 @@ function updateActiveTurnUI(activeIdx) {
 
 function triggerBotOrTurnAction() {
     if (game.isGameOver) return;
+    if (multiplayer && !multiplayer.isHost) return; // Only host or local mode runs bot actions
 
     const activePlayer = game.players[game.activePlayerIndex];
     if (activePlayer.isBot && !isBotMoving) {
@@ -1159,7 +1160,8 @@ function renderGameBoard() {
         lastActivePlayerIndex = game.activePlayerIndex;
     }
 
-    const activePlayer = game.players[myPlayerIndex];
+    const viewPlayerIndex = (myPlayerIndex >= 0 && myPlayerIndex < game.players.length) ? myPlayerIndex : 0;
+    const activePlayer = game.players[viewPlayerIndex];
     if (!activePlayer) return;
 
     const layout = getSeatLayout(game.numPlayers);
@@ -1211,11 +1213,11 @@ function renderGameBoard() {
     // Loop through all players and render their seat mats
     game.players.forEach(p => {
         let seatSlot = 0;
-        if (p.index === myPlayerIndex) {
+        if (p.index === viewPlayerIndex) {
             seatSlot = 0;
         } else {
             // Clockwise seats mapping
-            seatSlot = (p.index - myPlayerIndex + game.numPlayers) % game.numPlayers;
+            seatSlot = (p.index - viewPlayerIndex + game.numPlayers) % game.numPlayers;
         }
 
         const pos = layout.seats[seatSlot] || { r: 1, c: 1, span: 1 };
@@ -1228,7 +1230,7 @@ function renderGameBoard() {
         const trickText = p.trickOrTreatActive ? '🎃' : '';
 
         let organsHTML = '';
-        if (p.index === myPlayerIndex) {
+        if (p.index === viewPlayerIndex) {
             if (p.board.length === 0) {
                 organsHTML = `
                     <div style="font-size:0.6rem; color:var(--text-muted); text-align:center; padding:10px; border:1.5px dashed rgba(255,255,255,0.06); border-radius:8px; width:100%;" ondragover="allowDrag(event)" ondrop="handleBoardDrop(event)">
@@ -1274,11 +1276,13 @@ function renderGameBoard() {
                 }).join('');
             }
 
+            const isSpectator = myPlayerIndex === -1;
+            const nameLabel = isSpectator ? p.name : `TÚ (${p.name.replace(/.* /,'')})`;
             const badgeHTML = playerBadge ? `<span style="color:${playerBadge.color}; font-size:0.7rem; margin-left:5px; border:1px solid ${playerBadge.color}; padding:0px 4px; border-radius:4px; font-weight:800; text-transform:none;">${playerBadge.short}</span>` : '';
 
             gridHTML += `
                 <div class="player-board-panel glass-panel ${isTurn ? 'active-turn' : ''}" style="${gridStyle}" ondragover="handleBoardDragOver(event)" ondragleave="handleBoardDragLeave(event)" ondrop="handleBoardDrop(event)">
-                    <div class="rival-name">TÚ (${p.name.replace(/.* /,'')})${badgeHTML} ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
+                    <div class="rival-name">${nameLabel}${badgeHTML} ${extraPlaysText} ${quarantineText} ${gloveText} ${trickText}</div>
                     <div class="organ-cards-row">${organsHTML}</div>
                 </div>
             `;
@@ -1407,7 +1411,14 @@ function renderGameBoard() {
     const handRow = document.getElementById('playerHandRow');
     const isMyTurn = game.activePlayerIndex === myPlayerIndex;
 
-    handRow.innerHTML = activePlayer.hand.map(card => {
+    if (myPlayerIndex === -1) {
+        handRow.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.95rem; font-weight: bold; width: 100%; text-align: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px dashed var(--border-glass);">👁️ Modo Espectador — Observando la partida en tiempo real</div>`;
+        const discBtn = document.getElementById('discardSelectedBtn');
+        if (discBtn) discBtn.disabled = true;
+    } else {
+        const discBtn = document.getElementById('discardSelectedBtn');
+        if (discBtn) discBtn.disabled = false;
+        handRow.innerHTML = activePlayer.hand.map(card => {
         if (card.type === 'hidden') {
             return `<div class="card-item hidden-hand-card" style="${extraDeckStyle}"></div>`;
         }
