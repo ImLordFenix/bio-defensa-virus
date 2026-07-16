@@ -22,7 +22,7 @@ class BioDefensaAI {
         bot.hand.forEach(card => {
             game.players.forEach(targetPlayer => {
                 const extraParams = {};
-                if (card.color === 'orange') extraParams.replacedOrganIndex = 0;
+                if (card.color === 'orange') extraParams.replacedOrganIndex = BioDefensaAI.pickWorstOrganIndex(game, botIndex);
                 if (card.action === 'failed_experiment') extraParams.experimentChoice = 'medicine';
                 if (card.action === 'body_swap') extraParams.direction = 'clockwise';
                 if (card.action === 'transplant') extraParams.myOrganIndex = 0;
@@ -62,7 +62,7 @@ class BioDefensaAI {
         const organCards = hand.filter(c => c.type === 'organ');
         for (let card of organCards) {
             const extraParams = {};
-            if (card.color === 'orange') extraParams.replacedOrganIndex = 0;
+            if (card.color === 'orange') extraParams.replacedOrganIndex = BioDefensaAI.pickWorstOrganIndex(game, botIndex);
             const val = game.validateMove(botIndex, card.id, botIndex, null, extraParams);
             if (val.valid) {
                 return { type: 'play', cardId: card.id, targetPlayerIndex: botIndex, targetOrganIndex: null, extraParams };
@@ -133,6 +133,33 @@ class BioDefensaAI {
     static getHardMove(game, botIndex) {
         // Hard bot behaves similarly but is smarter with target selection and prioritizes blocking leading player
         return this.getNormalMove(game, botIndex);
+    }
+
+    /**
+     * Pick the "worst" organ on the bot's board to replace with the Organillo Mutante.
+     * Priority: most viruses > least medicines > first non-mutant organ > index 0.
+     */
+    static pickWorstOrganIndex(game, botIndex) {
+        const bot = game.players[botIndex];
+        if (!bot || bot.board.length === 0) return 0;
+
+        let worstIdx = 0;
+        let worstScore = -Infinity;
+
+        bot.board.forEach((slot, idx) => {
+            // Score: higher = worse organ (more viruses, fewer medicines, not immunized)
+            let score = slot.viruses.length * 10 - slot.medicines.length * 5;
+            // Prefer replacing non-immunized organs
+            if (slot.medicines.length >= 2) score -= 100;
+            // Prefer replacing non-bionic organs
+            if (slot.organ.color === 'bionic') score -= 50;
+            if (score > worstScore) {
+                worstScore = score;
+                worstIdx = idx;
+            }
+        });
+
+        return worstIdx;
     }
 }
 

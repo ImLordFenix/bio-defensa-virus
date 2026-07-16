@@ -147,6 +147,14 @@ class VirusGame {
                 if (player.board.length === 0) {
                     return { valid: false, reason: "El Organillo Mutante requiere descartar un organillo existente tuyo." };
                 }
+                // Require a valid replacedOrganIndex
+                if (extraParams.replacedOrganIndex === undefined || extraParams.replacedOrganIndex === null) {
+                    return { valid: false, reason: "Debes seleccionar qué órgano reemplazar con el Organillo Mutante." };
+                }
+                const rIdx = extraParams.replacedOrganIndex;
+                if (typeof rIdx !== 'number' || rIdx < 0 || rIdx >= player.board.length) {
+                    return { valid: false, reason: "Índice de órgano a reemplazar no válido." };
+                }
                 return { valid: true };
             }
 
@@ -438,7 +446,11 @@ class VirusGame {
         // --- Play Resolutions ---
         if (card.type === 'organ') {
             if (card.color === 'orange') {
-                const replacedIdx = extraParams.replacedOrganIndex || 0;
+                const replacedIdx = extraParams.replacedOrganIndex;
+                if (replacedIdx === undefined || replacedIdx === null || replacedIdx < 0 || replacedIdx >= player.board.length) {
+                    console.error("playCard: replacedOrganIndex inválido para Organillo Mutante:", replacedIdx);
+                    return { valid: false, reason: "Índice de órgano a reemplazar no válido." };
+                }
                 const discardedSlot = player.board.splice(replacedIdx, 1)[0];
                 this.discardPile.push(discardedSlot.organ, ...discardedSlot.viruses, ...discardedSlot.medicines);
                 this.log(`${player.name} reemplazó su órgano ${discardedSlot.organ.name} por el Organillo Mutante.`, { icon: '🎃', color: 'orange' });
@@ -528,6 +540,8 @@ class VirusGame {
             } else {
                 this.startTimer();
                 this.onStateChange();
+                // Re-trigger turn action so bots can play their extra cards
+                this.onTurnChange(this.activePlayerIndex);
             }
         } else if (player.extraPlays && player.extraPlays > 0) {
             // Playing one of the extra plays from Horas Extra
@@ -609,13 +623,35 @@ class VirusGame {
                         if (other.index === player.index) continue;
                         for (let otherIdx = 0; otherIdx < other.board.length; otherIdx++) {
                             const otherSlot = other.board[otherIdx];
-                            if (otherSlot.organ.color === 'bionic' || otherSlot.medicines.length > 0 || otherSlot.viruses.length > 0) continue;
-                            if (vir.color === 'multicolor' || otherSlot.organ.color === 'multicolor' || vir.color === otherSlot.organ.color) {
+                            // Skip bionic organs (immune) and immunized organs (2+ medicines)
+                            if (otherSlot.organ.color === 'bionic') continue;
+                            if (otherSlot.medicines.length >= 2) continue;
+                            // Color matching: virus must match organ color
+                            const colorMatches = vir.color === 'multicolor' || otherSlot.organ.color === 'multicolor' || vir.color === otherSlot.organ.color;
+                            if (!colorMatches) continue;
+                            // Can contagiate: organ has medicine (virus neutralizes it), or organ has <2 viruses
+                            if (otherSlot.medicines.length > 0) {
+                                // Virus neutralizes a medicine
+                                const discMed = otherSlot.medicines.pop();
+                                this.discardPile.push(discMed, vir);
+                                slot.viruses.pop();
+                                found = true;
+                                moved++;
+                                this.log(`Contagio: Virus ${vir.name} neutralizó la medicina de ${other.name}.`, { icon: '☣️' });
+                                break;
+                            } else if (otherSlot.viruses.length < 2) {
+                                // Move virus to the organ
                                 slot.viruses.pop();
                                 otherSlot.viruses.push(vir);
                                 found = true;
                                 moved++;
                                 this.log(`Contagio: Virus ${vir.name} contagiado a ${other.name}.`, { icon: '☣️' });
+                                // Check if organ is now destroyed (2 viruses)
+                                if (otherSlot.viruses.length >= 2) {
+                                    this.discardPile.push(otherSlot.organ, ...otherSlot.viruses);
+                                    other.board.splice(otherIdx, 1);
+                                    this.log(`¡El órgano ${otherSlot.organ.name} de ${other.name} ha sido destruido por contagio!`, { icon: '💀' });
+                                }
                                 break;
                             }
                         }
@@ -816,9 +852,10 @@ class VirusGame {
             if (player.trickOrTreatActive) continue;
 
             const healthySlots = player.board.filter(slot => this.isOrganHealthy(slot));
+            const infectedSlots = player.board.filter(slot => !this.isOrganHealthy(slot));
 
-            // Simplifying victory to check if they have gathered the target number of healthy organs
-            if (healthySlots.length >= targetColorsCount) {
+            // Must have enough healthy organs AND no infected organs on the board
+            if (healthySlots.length >= targetColorsCount && infectedSlots.length === 0) {
                 this.isGameOver = true;
                 this.winner = player;
                 break;

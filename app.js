@@ -392,9 +392,6 @@ function triggerBotOrTurnAction() {
             }
 
             const decision = BioDefensaAI.getDecision(game, game.activePlayerIndex);
-            
-            // Allow next turn to trigger bot actions by clearing the flag before execution
-            isBotMoving = false;
 
             if (decision.type === 'play') {
                 const card = activePlayer.hand.find(c => c.id === decision.cardId);
@@ -416,7 +413,10 @@ function triggerBotOrTurnAction() {
                 
                 game.discardCards(game.activePlayerIndex, decision.cardIds);
             }
-        }, 400);
+
+            // Clear the flag AFTER execution to prevent race conditions
+            isBotMoving = false;
+        }, 1500);
     }
 }
 
@@ -588,6 +588,12 @@ function handleOrganDrop(ev, targetPlayerIdx, targetOrganIdx) {
     if (card.type === 'medicine' && targetPlayerIdx !== myPlayerIndex && !activePlayer.trickOrTreatActive) {
         playSound('error');
         showCustomAlert("Solo puedes aplicar medicinas en tus propios órganos.", 'error');
+        return;
+    }
+
+    // Detect mutante organ dropped on own organ slot — redirect to selection modal
+    if (card.type === 'organ' && card.color === 'orange' && targetPlayerIdx === myPlayerIndex) {
+        triggerMutanteSelection(cardId);
         return;
     }
 
