@@ -26,6 +26,12 @@
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
+    
+    /* Particles custom properties colors */
+    --color-virus: #ef4444;
+    --color-medicine: #10b981;
+    --color-organ: #3b82f6;
+    --color-special: #8b5cf6;
 }
 
 * {
@@ -1160,7 +1166,9 @@ body {
         margin-bottom: 0;
         margin-right: 15px;
         width: 140px;
-        flex-shrink: 0;}
+        flex-shrink: 0;
+    }
+}
 
 /* === SENSORY FEEDBACK (PARTICLES) === */
 .particle {
