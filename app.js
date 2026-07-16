@@ -1612,7 +1612,7 @@ window.kickPlayer = function(peerId) {
     const player = multiplayer.playersList.find(p => p.peerId === peerId);
     const name = player ? player.nickname : "este jugador";
 
-    if (name === 'Arturiho') {
+    if (name === 'Arturinho') {
         if (typeof showCustomAlert === 'function') {
             showCustomAlert("La expulsión a ese jugador no se puede.", "error");
         }
