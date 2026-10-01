@@ -122,8 +122,8 @@ class BioDefensaMultiplayer {
             }
             
             const players = snapshot.val();
-            if (Object.keys(players).length >= 12) {
-                this.onError("La sala está llena.");
+            if (Object.keys(players).length >= 10) {
+                this.onError("La sala está llena (Máximo 10 jugadores).");
                 return;
             }
             

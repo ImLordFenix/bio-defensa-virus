@@ -1,0 +1,56 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": "auth != null || !data.exists() || data.child('players/' + newData.child('lastPeerId').val()).exists()",
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "players": {
+          "$peerId": {
+            ".write": "true"
+          }
+        },
+        "actions": {
+          "$actionId": {
+            ".write": "true"
+          }
+        },
+        "gameState": {
+          ".write": "data.parent().child('hostId').val() === newData.child('hostId').val() || !data.exists()"
+        },
+        "chat": {
+          "$chatId": {
+            ".write": "true"
+          }
+        },
+        "emotes": {
+          "$emoteId": {
+            ".write": "true"
+          }
+        }
+      }
+    },
+    "users": {
+      "$userId": {
+        ".read": true,
+        ".write": "$userId === auth.uid || auth.token.admin === true"
+      }
+    },
+    "friends": {
+      "$userId": {
+        ".read": "$userId === auth.uid",
+        ".write": "$userId === auth.uid"
+      }
+    },
+    "invitations": {
+      "$userId": {
+        ".read": "$userId === auth.uid || auth != null",
+        ".write": "true"
+      }
+    },
+    "leaderboards": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}

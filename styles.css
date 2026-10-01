@@ -1308,3 +1308,28 @@ body {
         box-shadow: 0 0 20px rgba(255, 50, 50, 0.4);
     }
 }
+
+/* Admin Panel Styles */
+.admin-tab-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+.admin-tab-btn:hover {
+    background: rgba(0, 240, 255, 0.1);
+    color: #00F0FF;
+    border-color: rgba(0, 240, 255, 0.3);
+}
+.admin-tab-btn.active {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(0, 255, 157, 0.2));
+    color: #00F0FF;
+    border-color: #00F0FF;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}

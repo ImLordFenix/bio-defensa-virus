@@ -65,13 +65,26 @@
             <p class="logo-sub">Inmunidad o Destrucción</p>
         </div>
 
-        <div class="profile-setup glass-panel">
-            <div class="avatar-select" id="avatarDisplay" onclick="openAvatarModal()">👨‍⚕️</div>
-            <div class="profile-input-group">
-                <label for="nicknameInput">Nombre del Investigador</label>
-                <input type="text" id="nicknameInput" value="Investigador" placeholder="Escribe tu apodo...">
-                <div id="badgeDisplay" style="margin-top: 5px; font-size: 0.75rem; font-weight: bold; display: none;"></div>
+        <div class="profile-setup glass-panel" style="display: flex; align-items: center; justify-content: space-between; padding: 15px 25px; gap: 20px; width: 100%; max-width: 650px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="avatar-select" id="avatarDisplay" onclick="openAvatarModal()" title="Haz clic para cambiar avatar" style="width: 55px; height: 55px; font-size: 2.2rem; border-radius: 50%; background: rgba(0, 240, 255, 0.1); border: 2px solid #00F0FF; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease;">👨‍⚕️</div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="nicknameDisplay" style="font-weight: 800; font-size: 1.2rem; color: var(--text-primary);">Investigador</span>
+                        <button class="btn btn-secondary" onclick="editNicknameInline()" style="padding: 2px 8px; font-size: 0.7rem; border-radius: 6px;">✏️ Editar</button>
+                    </div>
+                    <div id="nicknameInputContainer" style="display: none; margin-top: 4px;">
+                        <input type="text" id="nicknameInput" value="Investigador" style="padding: 4px 10px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid var(--primary); color: white; font-size: 0.9rem;" onblur="finishNicknameEdit()" onkeypress="if(event.key==='Enter') finishNicknameEdit()">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.75rem; color: #00FF9D; font-weight: bold;">● Sesión Iniciada</span>
+                        <div id="badgeDisplay" style="font-size: 0.75rem; font-weight: bold;"></div>
+                    </div>
+                </div>
             </div>
+            <button class="btn btn-secondary" onclick="openFriendsModal()" style="padding: 8px 14px; font-size: 0.8rem;">
+                👥 Mi Perfil / Amigos
+            </button>
         </div>
 
         <div class="main-menu">
@@ -79,7 +92,13 @@
                 🎮 Partida Local (Con Bots)
             </button>
             <button class="btn btn-secondary" onclick="openMultiplayerModal()">
-                🌐 Jugar Multijugador P2P
+                🌐 Jugar Multijugador P2P (Hasta 10 P)
+            </button>
+            <button class="btn btn-secondary" onclick="openLeaderboardModal()">
+                🏆 Récords & Tabla de Honor
+            </button>
+            <button class="btn btn-secondary" onclick="openFriendsModal()">
+                👥 Red de Amigos e Invitaciones
             </button>
             <button class="btn btn-secondary" onclick="openCollectionModal()">
                 🃏 Colección de Cartas (Galería)
@@ -100,7 +119,7 @@
         </div>
 
         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 15px;">
-            Inspirado en Virus! + Evolution + Halloween. Soporta 2-12 Jugadores. 100% P2P sin servidores.
+            Inspirado en Virus! + Evolution + Halloween. Soporta 2-10 Jugadores. 100% P2P sin servidores.
         </div>
     </div>
 
@@ -292,8 +311,67 @@
                     <option value="4">4 (Tú + 3 Bots)</option>
                     <option value="6">6 (Tú + 5 Bots)</option>
                     <option value="8">8 (Tú + 7 Bots)</option>
-                    <option value="12">12 (Tú + 11 Bots)</option>
+                    <option value="10">10 (Tú + 9 Bots)</option>
                 </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: LEADERBOARD & TABLA DE HONOR -->
+    <div class="modal-overlay" id="leaderboardModal">
+        <div class="modal-content glass-panel" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>🏆 Récords & Tabla de Honor</h3>
+                <span class="modal-close" onclick="closeModal('leaderboardModal')">&times;</span>
+            </div>
+            <!-- Filters & Metrics -->
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" id="lbFilterGlobal" onclick="switchLeaderboardFilter('GLOBAL')" style="padding: 6px 14px; font-size: 0.8rem;">GLOBAL</button>
+                    <button class="btn btn-secondary" id="lbFilterAmigos" onclick="switchLeaderboardFilter('AMIGOS')" style="padding: 6px 14px; font-size: 0.8rem;">AMIGOS</button>
+                    <button class="btn btn-secondary" id="lbFilterSala" onclick="switchLeaderboardFilter('SALA')" style="padding: 6px 14px; font-size: 0.8rem;">SALA</button>
+                    <button class="btn btn-secondary" id="lbFilterPersonal" onclick="switchLeaderboardFilter('PERSONAL')" style="padding: 6px 14px; font-size: 0.8rem;">PERSONAL</button>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" id="lbMetricVictorias" onclick="switchLeaderboardMetric('VICTORIAS')" style="padding: 4px 10px; font-size: 0.75rem;">MÁS VICTORIAS</button>
+                    <button class="btn btn-secondary" id="lbMetricNiveles" onclick="switchLeaderboardMetric('NIVELES')" style="padding: 4px 10px; font-size: 0.75rem;">MÁS NIVEL / XP</button>
+                    <button class="btn btn-secondary" id="lbMetricPartidas" onclick="switchLeaderboardMetric('PARTIDAS')" style="padding: 4px 10px; font-size: 0.75rem;">MÁS PARTIDAS</button>
+                </div>
+            </div>
+            <!-- Leaderboard Table Container -->
+            <div id="leaderboardListContainer" style="max-height: 380px; overflow-y: auto;">
+                <!-- Dynamically rendered -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RED DE AMIGOS E INVITACIONES -->
+    <div class="modal-overlay" id="friendsModal">
+        <div class="modal-content glass-panel" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>👥 Red de Amigos e Invitaciones</h3>
+                <span class="modal-close" onclick="closeModal('friendsModal')">&times;</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <!-- My ID Section -->
+                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">TU ID ÚNICO DE INVESTIGADOR</div>
+                        <div id="myPeerIdDisplay" style="font-weight: 800; font-size: 1.1rem; color: #00F0FF;">Cargando...</div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="copyMyPeerId()" style="padding: 6px 12px; font-size: 0.8rem;">Copiar ID</button>
+                </div>
+
+                <!-- Add Friend Form -->
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="addFriendInput" placeholder="Introduce el ID de tu amigo..." style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); color: white;">
+                    <button class="btn btn-primary" onclick="sendFriendRequestUI()" style="padding: 10px 18px; font-size: 0.85rem;">Agregar</button>
+                </div>
+
+                <!-- Friends List Container -->
+                <div style="max-height: 250px; overflow-y: auto;" id="friendsListContainer">
+                    <div style="text-align: center; color: var(--text-muted); padding: 15px;">Cargando lista de amigos...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -358,6 +436,12 @@
     <script src="storage.js?v=1.1.0"></script>
     <script src="cards.js?v=1.1.0"></script>
     <script src="audio.js?v=1.1.0"></script>
+    <script src="network/friends.js?v=1.1.0"></script>
+    <script src="network/invitations.js?v=1.1.0"></script>
+    <script src="analytics/xpSystem.js?v=1.1.0"></script>
+    <script src="analytics/leaderboard.js?v=1.1.0"></script>
+    <script src="admin/adminAuth.js?v=1.1.0"></script>
+    <script src="admin/adminPanel.js?v=1.1.0"></script>
     <script>
         let currentStep = 0;
         const totalSteps = 4;
@@ -390,6 +474,7 @@
             await dbInstance.init();
             const profile = await dbInstance.getProfile();
             document.getElementById('nicknameInput').value = profile.nickname;
+            document.getElementById('nicknameDisplay').textContent = profile.nickname || 'Investigador';
             document.getElementById('avatarDisplay').textContent = profile.avatar;
             document.getElementById('soundVol').value = profile.volumeSound;
             document.getElementById('musicVol').value = profile.volumeMusic;
@@ -400,7 +485,25 @@
             // Load and display range badge
             const stats = await dbInstance.getStats();
             updateBadgeUI(stats.gamesWon);
+            
+            // Sync with cloud leaderboard
+            if (window.leaderboardManager) {
+                window.leaderboardManager.submitScore(profile, stats);
+            }
         });
+
+        function editNicknameInline() {
+            document.getElementById('nicknameInputContainer').style.display = 'block';
+            document.getElementById('nicknameInput').focus();
+        }
+
+        async function finishNicknameEdit() {
+            const input = document.getElementById('nicknameInput');
+            const val = input.value.trim() || 'Investigador';
+            document.getElementById('nicknameDisplay').textContent = val;
+            document.getElementById('nicknameInputContainer').style.display = 'none';
+            await saveConfig();
+        }
 
         function updateBadgeUI(wins) {
             const badge = dbInstance.getVictoryBadge(wins);
@@ -829,6 +932,173 @@
 
             document.body.appendChild(overlay);
         }
+
+        // --- LEADERBOARD HANDLERS ---
+        let currentLbFilter = 'GLOBAL';
+        let currentLbMetric = 'VICTORIAS';
+
+        async function openLeaderboardModal() {
+            document.getElementById('leaderboardModal').style.display = 'flex';
+            await loadAndRenderLeaderboard();
+        }
+
+        async function switchLeaderboardFilter(filter) {
+            currentLbFilter = filter;
+            ['Global', 'Amigos', 'Sala', 'Personal'].forEach(f => {
+                const btn = document.getElementById(`lbFilter${f}`);
+                if (btn) btn.className = f.toUpperCase() === filter ? 'btn btn-primary' : 'btn btn-secondary';
+            });
+            await loadAndRenderLeaderboard();
+        }
+
+        async function switchLeaderboardMetric(metric) {
+            currentLbMetric = metric;
+            ['Victorias', 'Niveles', 'Partidas'].forEach(m => {
+                const btn = document.getElementById(`lbMetric${m}`);
+                if (btn) btn.className = m.toUpperCase() === metric ? 'btn btn-primary' : 'btn btn-secondary';
+            });
+            await loadAndRenderLeaderboard();
+        }
+
+        async function loadAndRenderLeaderboard() {
+            const container = document.getElementById('leaderboardListContainer');
+            container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Cargando clasificaciones...</div>';
+            
+            const data = await window.leaderboardManager.getLeaderboardData(currentLbFilter, currentLbMetric);
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">No hay registros disponibles.</div>';
+                return;
+            }
+
+            let html = `
+                <table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;">
+                    <thead>
+                        <tr style="background:rgba(255,255,255,0.05); color:var(--text-secondary); border-bottom:1px solid var(--border-glass);">
+                            <th style="padding:10px;">Pos</th>
+                            <th style="padding:10px;">Investigador</th>
+                            <th style="padding:10px;">Nivel / XP</th>
+                            <th style="padding:10px;">Victorias</th>
+                            <th style="padding:10px;">Partidas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach((item, index) => {
+                let posBadge = `${index + 1}º`;
+                if (index === 0) posBadge = '🥇 1º';
+                else if (index === 1) posBadge = '🥈 2º';
+                else if (index === 2) posBadge = '🥉 3º';
+
+                const isMe = window.currentProfile && window.currentProfile.nickname === item.nickname;
+                const rowBg = isMe ? 'background: rgba(0, 240, 255, 0.1); border-left: 3px solid #00F0FF;' : 'border-bottom: 1px solid rgba(255,255,255,0.03);';
+
+                html += `
+                    <tr style="${rowBg}">
+                        <td style="padding:10px; font-weight:800;">${posBadge}</td>
+                        <td style="padding:10px; display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:1.3rem;">${item.avatar || '👨‍⚕️'}</span>
+                            <div>
+                                <div style="font-weight:bold; color:var(--text-primary);">${item.nickname}</div>
+                                <div style="font-size:0.65rem; color:var(--primary);">${item.badge || 'Investigador'}</div>
+                            </div>
+                        </td>
+                        <td style="padding:10px;"><strong style="color:#00FF9D;">Nivel ${item.level || 1}</strong> <span style="font-size:0.7rem; color:var(--text-muted);">(${item.xp || 0} XP)</span></td>
+                        <td style="padding:10px; font-weight:800; color:#FFB700;">${item.wins || 0}</td>
+                        <td style="padding:10px; color:var(--text-secondary);">${item.games || 0}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // --- FRIENDS & SOCIAL HANDLERS ---
+        function openFriendsModal() {
+            let myPeerId = sessionStorage.getItem('bd_peer_id');
+            if (!myPeerId) {
+                myPeerId = Math.random().toString(36).substring(2, 15);
+                sessionStorage.setItem('bd_peer_id', myPeerId);
+            }
+            document.getElementById('myPeerIdDisplay').textContent = myPeerId;
+            document.getElementById('friendsModal').style.display = 'flex';
+            
+            window.friendsManager.init(myPeerId);
+            window.invitationsManager.init(myPeerId);
+            window.renderFriendsUI(window.friendsManager.friendsList, window.friendsManager.pendingRequests);
+        }
+
+        function copyMyPeerId() {
+            const id = document.getElementById('myPeerIdDisplay').textContent;
+            navigator.clipboard.writeText(id).then(() => {
+                showCustomAlert("¡Tu ID de Investigador se ha copiado al portapapeles!", "success");
+            });
+        }
+
+        async function sendFriendRequestUI() {
+            const input = document.getElementById('addFriendInput');
+            const targetId = input.value.trim();
+            if (!targetId) {
+                showCustomAlert("Introduce un ID válido.", "error");
+                return;
+            }
+            const res = await window.friendsManager.sendFriendRequest(targetId);
+            if (res.success) {
+                showCustomAlert(res.message, "success");
+                input.value = '';
+            } else {
+                showCustomAlert(res.message, "error");
+            }
+        }
+
+        window.renderFriendsUI = function(friends, pending) {
+            const container = document.getElementById('friendsListContainer');
+            if (!container) return;
+
+            let html = '';
+
+            if (pending && pending.length > 0) {
+                html += `<div style="font-size:0.75rem; color:#FFB700; font-weight:bold; margin-bottom:8px;">SOLICITUDES PENDIENTES (${pending.length})</div>`;
+                pending.forEach(p => {
+                    html += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,183,0,0.05); border:1px solid rgba(255,183,0,0.2); padding:8px 12px; border-radius:6px; margin-bottom:8px;">
+                            <div>
+                                <div style="font-weight:bold;">${p.nickname}</div>
+                                <div style="font-size:0.65rem; color:var(--text-muted);">ID: ${p.friendId}</div>
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-primary" style="padding:4px 10px; font-size:0.75rem;" onclick="window.friendsManager.acceptFriendRequest('${p.friendId}', '${p.nickname}')">Aceptar</button>
+                                <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.75rem;" onclick="window.friendsManager.rejectFriendRequest('${p.friendId}')">Rechazar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `<div style="font-size:0.75rem; color:var(--text-secondary); font-weight:bold; margin-top:10px; margin-bottom:8px;">MIS AMIGOS (${friends.length})</div>`;
+
+            if (friends.length === 0) {
+                html += `<div style="text-align:center; color:var(--text-muted); padding:15px; font-size:0.85rem;">No tienes amigos agregados todavía. ¡Comparte tu ID!</div>`;
+            } else {
+                friends.forEach(f => {
+                    html += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--border-glass); padding:8px 12px; border-radius:6px; margin-bottom:6px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:#00FF9D;">🟢</span>
+                                <div>
+                                    <div style="font-weight:bold; color:var(--text-primary);">${f.nickname}</div>
+                                    <div style="font-size:0.65rem; color:var(--text-muted);">ID: ${f.friendId}</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.75rem;" onclick="window.friendsManager.removeFriend('${f.friendId}')">Eliminar</button>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = html;
+        };
 
         async function joinRoom() {
             const code = document.getElementById('joinCodeInput').value.trim();

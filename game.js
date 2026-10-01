@@ -854,16 +854,32 @@ class VirusGame {
         if (this.mode === 'supreme') targetColorsCount = 6;
 
         for (let player of this.players) {
+            // Rule: Truco o Trato curse prevents victory
             if (player.trickOrTreatActive) continue;
 
             const healthySlots = player.board.filter(slot => this.isOrganHealthy(slot));
-            const infectedSlots = player.board.filter(slot => !this.isOrganHealthy(slot));
 
-            // Must have enough healthy organs AND no infected organs on the board
-            if (healthySlots.length >= targetColorsCount && infectedSlots.length === 0) {
-                this.isGameOver = true;
-                this.winner = player;
-                break;
+            if (healthySlots.length >= targetColorsCount) {
+                let wildcardCount = 0;
+                const coveredColors = new Set();
+
+                healthySlots.forEach(slot => {
+                    const c = slot.organ.color;
+                    if (c === 'multicolor' || c === 'orange') {
+                        wildcardCount++;
+                    } else if (c === 'bionic') {
+                        coveredColors.add('bionic');
+                    } else {
+                        coveredColors.add(c);
+                    }
+                });
+
+                const totalEffective = coveredColors.size + wildcardCount;
+                if (totalEffective >= targetColorsCount) {
+                    this.isGameOver = true;
+                    this.winner = player;
+                    break;
+                }
             }
         }
 

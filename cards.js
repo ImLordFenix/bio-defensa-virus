@@ -502,9 +502,9 @@ const CARD_TEMPLATES = {
 // Generates a deck scaled by the number of players to ensure we don't run out.
 function generateDeck(numPlayers, includeEvolution = true, includeHalloween = true) {
     let baseMultiplier = 1;
-    if (numPlayers > 4 && numPlayers <= 8) {
+    if (numPlayers > 4 && numPlayers <= 7) {
         baseMultiplier = 2;
-    } else if (numPlayers > 8) {
+    } else if (numPlayers > 7) {
         baseMultiplier = 3;
     }
 
