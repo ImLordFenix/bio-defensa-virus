@@ -382,41 +382,62 @@ function triggerBotOrTurnAction() {
     if (game.isGameOver) return;
 
     const activePlayer = game.players[game.activePlayerIndex];
-    if (activePlayer.isBot && !isBotMoving) {
+    if (activePlayer && activePlayer.isBot && !isBotMoving) {
         isBotMoving = true;
         
         setTimeout(() => {
-            if (game.isGameOver || game.activePlayerIndex !== activePlayer.index) {
-                isBotMoving = false;
-                return;
-            }
-
-            const decision = BioDefensaAI.getDecision(game, game.activePlayerIndex);
-
-            if (decision.type === 'play') {
-                const card = activePlayer.hand.find(c => c.id === decision.cardId);
-                if (card) {
-                    playCardSound(card);
-                    spawnParticles(null, card.type, decision.targetPlayerIndex);
+            try {
+                if (game.isGameOver || game.activePlayerIndex !== activePlayer.index) {
+                    return;
                 }
-                
-                game.playCard(
-                    game.activePlayerIndex,
-                    decision.cardId,
-                    decision.targetPlayerIndex,
-                    decision.targetOrganIndex,
-                    decision.extraParams
-                );
-            } else if (decision.type === 'discard') {
-                playSound('play_card');
-                spawnParticles(null, 'organ', game.activePlayerIndex);
-                
-                game.discardCards(game.activePlayerIndex, decision.cardIds);
-            }
 
-            // Clear the flag AFTER execution to prevent race conditions
-            isBotMoving = false;
-        }, 1500);
+                const decision = BioDefensaAI.getDecision(game, game.activePlayerIndex);
+
+                let moveResult = { valid: false };
+
+                if (decision && decision.type === 'play') {
+                    const card = activePlayer.hand.find(c => c.id === decision.cardId);
+                    if (card) {
+                        playCardSound(card);
+                        spawnParticles(null, card.type, decision.targetPlayerIndex);
+                    }
+                    
+                    moveResult = game.playCard(
+                        game.activePlayerIndex,
+                        decision.cardId,
+                        decision.targetPlayerIndex,
+                        decision.targetOrganIndex,
+                        decision.extraParams || {}
+                    );
+                } else if (decision && decision.type === 'discard' && decision.cardIds && decision.cardIds.length > 0) {
+                    playSound('play_card');
+                    spawnParticles(null, 'organ', game.activePlayerIndex);
+                    moveResult = game.discardCards(game.activePlayerIndex, decision.cardIds);
+                }
+
+                // If played card failed or discard had no cards, force emergency discard of 1 card!
+                if (!moveResult || !moveResult.valid) {
+                    if (activePlayer.hand.length > 0) {
+                        const fallbackCardId = activePlayer.hand[0].id;
+                        playSound('play_card');
+                        spawnParticles(null, 'organ', game.activePlayerIndex);
+                        game.discardCards(game.activePlayerIndex, [fallbackCardId]);
+                    } else {
+                        game.refillHand(activePlayer);
+                        game.endTurn();
+                    }
+                }
+            } catch (err) {
+                console.error("Bot execution emergency catch:", err);
+                if (activePlayer && activePlayer.hand.length > 0) {
+                    game.discardCards(activePlayer.index, [activePlayer.hand[0].id]);
+                } else {
+                    game.endTurn();
+                }
+            } finally {
+                isBotMoving = false;
+            }
+        }, 1000);
     }
 }
 
