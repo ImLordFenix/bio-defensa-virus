@@ -2,9 +2,9 @@
 
 class AdminAuth {
     constructor() {
-        // Pre-computed SHA-256 hash for default admin key "BioDefensaAdmin2026!"
-        // Hash: 7e754a10ffc06fcfd5ce56b3e83b48154e2dd013a7c667bc9ddf0a514d0263ee
-        this.expectedHash = "7e754a10ffc06fcfd5ce56b3e83b48154e2dd013a7c667bc9ddf0a514d0263ee";
+        // Pre-computed SHA-256 hash for admin key "BioDefensaAdmin2026!"
+        // Hash: b8c9718f331b85ee71548b714de150f4bb56aad936109f2f3800abc7b35380c5
+        this.expectedHash = "b8c9718f331b85ee71548b714de150f4bb56aad936109f2f3800abc7b35380c5";
         this.isAuthenticated = false;
         this.adminToken = sessionStorage.getItem('bd_admin_token') || null;
         if (this.adminToken === this.expectedHash) {
@@ -13,6 +13,10 @@ class AdminAuth {
     }
 
     async hashPassword(password) {
+        if (!window.crypto || !window.crypto.subtle) {
+            // Fallback for unsecure HTTP contexts where crypto.subtle is disabled by browser security policies
+            return password === "BioDefensaAdmin2026!" ? this.expectedHash : "invalid";
+        }
         const encoder = new TextEncoder();
         const data = encoder.encode(password);
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -21,13 +25,20 @@ class AdminAuth {
     }
 
     async login(username, password) {
-        if (!username || !password) return { success: false, message: "Campos incompletos." };
+        const cleanUser = (username || "").trim().toLowerCase();
+        const cleanPass = (password || "").trim();
+
+        if (!cleanUser || !cleanPass) return { success: false, message: "Campos incompletos." };
         
-        const computedHash = await this.hashPassword(password);
-        if (username.toLowerCase() === "admin" && computedHash === this.expectedHash) {
+        // Direct matching or hashed matching fallback
+        const isDirectMatch = (cleanUser === "admin" && cleanPass === "BioDefensaAdmin2026!");
+        const computedHash = await this.hashPassword(cleanPass);
+        const isHashMatch = (cleanUser === "admin" && computedHash === this.expectedHash);
+
+        if (isDirectMatch || isHashMatch) {
             this.isAuthenticated = true;
-            this.adminToken = computedHash;
-            sessionStorage.setItem('bd_admin_token', computedHash);
+            this.adminToken = this.expectedHash;
+            sessionStorage.setItem('bd_admin_token', this.expectedHash);
             return { success: true };
         } else {
             return { success: false, message: "Credenciales administrativas incorrectas." };
